@@ -2,9 +2,11 @@
 
 import { useRef, useState } from "react";
 import { LinkIcon } from "@/components/ui/Icon";
+import { TagPicker } from "@/components/ui/TagPicker";
 
 interface LinkFormProps {
   onCreated: () => void;
+  availableTags: string[];
 }
 
 function isValidUrl(value: string): boolean {
@@ -16,9 +18,9 @@ function isValidUrl(value: string): boolean {
   }
 }
 
-export function LinkForm({ onCreated }: LinkFormProps) {
+export function LinkForm({ onCreated, availableTags }: LinkFormProps) {
   const [url, setUrl] = useState("");
-  const [tags, setTags] = useState("");
+  const [selectedTags, setSelectedTags] = useState<string[]>([]);
   const [notes, setNotes] = useState("");
   const [expanded, setExpanded] = useState(false);
   const [loading, setLoading] = useState(false);
@@ -31,7 +33,7 @@ export function LinkForm({ onCreated }: LinkFormProps) {
   function collapse() {
     if (url.trim() === "") {
       setExpanded(false);
-      setTags("");
+      setSelectedTags([]);
       setNotes("");
       setError(null);
     }
@@ -50,10 +52,7 @@ export function LinkForm({ onCreated }: LinkFormProps) {
       body: JSON.stringify({
         url,
         notes: notes || undefined,
-        tags: tags
-          .split(",")
-          .map((t) => t.trim())
-          .filter(Boolean),
+        tags: selectedTags,
       }),
     });
 
@@ -66,7 +65,7 @@ export function LinkForm({ onCreated }: LinkFormProps) {
     }
 
     setUrl("");
-    setTags("");
+    setSelectedTags([]);
     setNotes("");
     setExpanded(false);
     setSavedFlash(true);
@@ -117,13 +116,7 @@ export function LinkForm({ onCreated }: LinkFormProps) {
 
       {expanded && (
         <div className="flex flex-col gap-2 px-4 pb-3">
-          <input
-            type="text"
-            value={tags}
-            onChange={(e) => setTags(e.target.value)}
-            placeholder="tags, comma, separated"
-            className="w-full rounded-[var(--radius-sm)] border border-[var(--color-hairline)] bg-[var(--color-surface)] px-3 py-1.5 text-[var(--text-xs)] text-[var(--color-ink)] outline-none placeholder:text-[var(--color-ink-3)] focus:border-[var(--color-accent)]"
-          />
+          <TagPicker availableTags={availableTags} selected={selectedTags} onChange={setSelectedTags} />
           <textarea
             value={notes}
             onChange={(e) => setNotes(e.target.value)}
