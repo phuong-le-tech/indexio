@@ -3,10 +3,18 @@ import { pool } from "@/lib/db";
 import { fetchMetadata } from "@/lib/metadata";
 import { toTsQuery } from "@/lib/search";
 
+const DEFAULT_LIMIT = 30;
+const MAX_LIMIT = 100;
+
 export async function GET(request: NextRequest) {
   const { searchParams } = new URL(request.url);
   const q = searchParams.get("q")?.trim() || "";
   const tag = searchParams.get("tag")?.trim() || "";
+  const limit = Math.min(
+    Math.max(Number(searchParams.get("limit")) || DEFAULT_LIMIT, 1),
+    MAX_LIMIT
+  );
+  const offset = Math.max(Number(searchParams.get("offset")) || 0, 0);
 
   const conditions: string[] = [];
   const params: unknown[] = [];
@@ -34,8 +42,14 @@ export async function GET(request: NextRequest) {
 
   const whereClause = conditions.length ? `WHERE ${conditions.join(" AND ")}` : "";
 
+  params.push(limit);
+  const limitIdx = params.length;
+  params.push(offset);
+  const offsetIdx = params.length;
+
   const result = await pool.query(
     `SELECT l.id, l.url, l.title, l.description, l.favicon_url, l.image_url, l.notes, l.created_at,
+            COUNT(*) OVER()::int AS match_count,
             COALESCE(
               (SELECT json_agg(t.name ORDER BY t.name)
                FROM link_tags lt JOIN tags t ON t.id = lt.tag_id
@@ -44,11 +58,18 @@ export async function GET(request: NextRequest) {
             ) AS tags
      FROM links l
      ${whereClause}
-     ORDER BY l.created_at DESC`,
+     ORDER BY l.created_at DESC
+     LIMIT $${limitIdx} OFFSET $${offsetIdx}`,
     params
   );
 
-  return NextResponse.json({ links: result.rows });
+  const matchCount = result.rows[0]?.match_count ?? 0;
+
+  return NextResponse.json({
+    links: result.rows,
+    matchCount,
+    hasMore: offset + result.rows.length < matchCount,
+  });
 }
 
 export async function POST(request: NextRequest) {
