@@ -1,5 +1,6 @@
 "use client";
 
+import NavLink from "next/link";
 import { Suspense, useCallback, useEffect, useRef, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { LinkForm } from "@/components/link-form/LinkForm";
@@ -125,12 +126,20 @@ function HomePageContent() {
     <div className="mx-auto w-full max-w-[var(--container-col)] px-5 py-12">
       <div className="mb-6 flex items-center justify-between">
         <h1 className="text-[var(--text-xl)] text-[var(--color-ink)]">Indexio</h1>
-        <button
-          onClick={handleLogout}
-          className="text-[var(--text-sm)] text-[var(--color-ink-3)] hover:text-[var(--color-ink)]"
-        >
-          Log out
-        </button>
+        <div className="flex items-center gap-4">
+          <NavLink
+            href="/tags"
+            className="text-[var(--text-sm)] text-[var(--color-ink-3)] hover:text-[var(--color-ink)]"
+          >
+            Manage tags
+          </NavLink>
+          <button
+            onClick={handleLogout}
+            className="text-[var(--text-sm)] text-[var(--color-ink-3)] hover:text-[var(--color-ink)]"
+          >
+            Log out
+          </button>
+        </div>
       </div>
 
       <div className="mb-6 flex flex-col gap-3">

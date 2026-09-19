@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { useState } from "react";
 import { getTagColor } from "@/lib/tagColors";
 import type { Tag } from "@/lib/types";
@@ -56,6 +57,12 @@ export function TagFilter({ tags, activeTag, onSelect, totalCount }: TagFilterPr
           Show less
         </button>
       )}
+      <Link
+        href="/tags"
+        className="text-[var(--text-xs)] text-[var(--color-ink-3)] hover:text-[var(--color-ink)]"
+      >
+        Manage tags
+      </Link>
     </div>
   );
 }
