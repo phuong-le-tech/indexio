@@ -15,7 +15,13 @@ export async function GET(request: NextRequest) {
     const tsQuery = toTsQuery(q);
     if (tsQuery) {
       params.push(tsQuery);
-      conditions.push(`l.search_vector @@ to_tsquery('english', $${params.length})`);
+      const idx = params.length;
+      conditions.push(
+        `(l.search_vector @@ to_tsquery('english', $${idx}) OR EXISTS (
+           SELECT 1 FROM link_tags lt JOIN tags t ON t.id = lt.tag_id
+           WHERE lt.link_id = l.id AND to_tsvector('english', t.name) @@ to_tsquery('english', $${idx})
+         ))`
+      );
     }
   }
 
