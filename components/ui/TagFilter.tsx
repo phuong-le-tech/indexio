@@ -1,5 +1,6 @@
 "use client";
 
+import { useState } from "react";
 import { getTagColor } from "@/lib/tagColors";
 import type { Tag } from "@/lib/types";
 
@@ -11,12 +12,23 @@ interface TagFilterProps {
 }
 
 export function TagFilter({ tags, activeTag, onSelect, totalCount }: TagFilterProps) {
+  const [showAll, setShowAll] = useState(false);
+
   if (tags.length === 0) return null;
 
+  const used = tags.filter((t) => t.link_count > 0);
+  const unused = tags.filter((t) => t.link_count === 0);
+  // Never hide the active tag, even if it has no links (e.g. reached via a
+  // linkable search-filtered URL) - collapsing it out from under the user
+  // would silently change what "active" means.
+  const activeIsUnused = activeTag !== null && unused.some((t) => t.name === activeTag);
+  const visible = showAll || activeIsUnused ? tags : used;
+  const hiddenCount = tags.length - visible.length;
+
   return (
-    <div className="flex flex-wrap gap-2">
+    <div className="flex flex-wrap items-center gap-2">
       <Pill label="All" count={totalCount} active={activeTag === null} onClick={() => onSelect(null)} />
-      {tags.map((tag) => (
+      {visible.map((tag) => (
         <Pill
           key={tag.id}
           label={tag.name}
@@ -26,6 +38,24 @@ export function TagFilter({ tags, activeTag, onSelect, totalCount }: TagFilterPr
           color={getTagColor(tag.name)}
         />
       ))}
+      {!showAll && hiddenCount > 0 && (
+        <button
+          type="button"
+          onClick={() => setShowAll(true)}
+          className="text-[var(--text-xs)] text-[var(--color-ink-3)] underline decoration-dotted underline-offset-2 hover:text-[var(--color-ink)]"
+        >
+          +{hiddenCount} more
+        </button>
+      )}
+      {showAll && unused.length > 0 && (
+        <button
+          type="button"
+          onClick={() => setShowAll(false)}
+          className="text-[var(--text-xs)] text-[var(--color-ink-3)] underline decoration-dotted underline-offset-2 hover:text-[var(--color-ink)]"
+        >
+          Show less
+        </button>
+      )}
     </div>
   );
 }
