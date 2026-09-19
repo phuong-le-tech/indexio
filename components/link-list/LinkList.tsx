@@ -9,9 +9,12 @@ import type { Link } from "@/lib/types";
 interface LinkListProps {
   links: Link[];
   onDeleted: () => void;
+  hasMore?: boolean;
+  loadingMore?: boolean;
+  onLoadMore?: () => void;
 }
 
-export function LinkList({ links, onDeleted }: LinkListProps) {
+export function LinkList({ links, onDeleted, hasMore, loadingMore, onLoadMore }: LinkListProps) {
   const [deletingIds, setDeletingIds] = useState<Set<number>>(new Set());
   const [editingId, setEditingId] = useState<number | null>(null);
 
@@ -53,6 +56,18 @@ export function LinkList({ links, onDeleted }: LinkListProps) {
           onDelete={() => handleDelete(link.id)}
         />
       ))}
+      {hasMore && (
+        <li className="flex justify-center">
+          <button
+            type="button"
+            onClick={onLoadMore}
+            disabled={loadingMore}
+            className="rounded-[var(--radius-md)] border border-[var(--color-hairline)] px-4 py-2 text-[var(--text-sm)] text-[var(--color-ink-2)] hover:bg-[var(--color-surface-hover)] hover:text-[var(--color-ink)] disabled:opacity-50"
+          >
+            {loadingMore ? "Loading…" : "Load more"}
+          </button>
+        </li>
+      )}
     </ul>
   );
 }

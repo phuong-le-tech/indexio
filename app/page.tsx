@@ -29,21 +29,39 @@ function HomePageContent() {
   const [activeTag, setActiveTag] = useState<string | null>(searchParams.get("tag"));
   const [loading, setLoading] = useState(true);
   const [showSkeleton, setShowSkeleton] = useState(false);
-  const [totalLinks, setTotalLinks] = useState<number | null>(null);
+  const [matchCount, setMatchCount] = useState(0);
+  const [totalLinks, setTotalLinks] = useState(0);
+  const [hasMore, setHasMore] = useState(false);
+  const [loadingMore, setLoadingMore] = useState(false);
 
-  const loadLinks = useCallback(async () => {
-    const params = new URLSearchParams();
-    if (query) params.set("q", query);
-    if (activeTag) params.set("tag", activeTag);
+  const loadLinks = useCallback(
+    async (offset = 0) => {
+      const params = new URLSearchParams();
+      if (query) params.set("q", query);
+      if (activeTag) params.set("tag", activeTag);
+      if (offset) params.set("offset", String(offset));
 
-    const res = await fetch(`/api/links?${params.toString()}`);
-    const data = await res.json();
-    setLinks(data.links || []);
-    setLoading(false);
-    if (!query && !activeTag) {
-      setTotalLinks((data.links || []).length);
-    }
-  }, [query, activeTag]);
+      const res = await fetch(`/api/links?${params.toString()}`);
+      const data = await res.json();
+      const fetched: Link[] = data.links || [];
+      const count = data.matchCount ?? 0;
+
+      setLinks((prev) => (offset ? [...prev, ...fetched] : fetched));
+      setMatchCount(count);
+      if (!query && !activeTag) {
+        setTotalLinks(count);
+      }
+      setHasMore(Boolean(data.hasMore));
+      setLoading(false);
+      setLoadingMore(false);
+    },
+    [query, activeTag]
+  );
+
+  async function handleLoadMore() {
+    setLoadingMore(true);
+    await loadLinks(links.length);
+  }
 
   const loadTags = useCallback(async () => {
     const res = await fetch("/api/tags");
@@ -119,15 +137,15 @@ function HomePageContent() {
         <SearchBar
           value={query}
           onChange={setQuery}
-          totalCount={totalLinks ?? 0}
-          resultCount={links.length}
+          totalCount={totalLinks}
+          resultCount={matchCount}
         />
         <LinkForm onCreated={handleChanged} availableTags={tags.map((t) => t.name)} />
       </div>
 
       {tags.length > 0 && (
         <div className="mb-4">
-          <TagFilter tags={tags} activeTag={activeTag} onSelect={setActiveTag} totalCount={totalLinks ?? 0} />
+          <TagFilter tags={tags} activeTag={activeTag} onSelect={setActiveTag} totalCount={totalLinks} />
         </div>
       )}
 
@@ -151,7 +169,15 @@ function HomePageContent() {
         </div>
       )}
 
-      {!loading && links.length > 0 && <LinkList links={links} onDeleted={handleChanged} />}
+      {!loading && links.length > 0 && (
+        <LinkList
+          links={links}
+          onDeleted={handleChanged}
+          hasMore={hasMore}
+          loadingMore={loadingMore}
+          onLoadMore={handleLoadMore}
+        />
+      )}
     </div>
   );
 }
