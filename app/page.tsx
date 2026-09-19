@@ -122,7 +122,7 @@ function HomePageContent() {
           totalCount={totalLinks ?? 0}
           resultCount={links.length}
         />
-        <LinkForm onCreated={handleChanged} />
+        <LinkForm onCreated={handleChanged} availableTags={tags.map((t) => t.name)} />
       </div>
 
       {tags.length > 0 && (

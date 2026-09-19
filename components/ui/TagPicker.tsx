@@ -1,0 +1,135 @@
+"use client";
+
+import { useRef, useState } from "react";
+import { XIcon } from "@/components/ui/Icon";
+
+interface TagPickerProps {
+  availableTags: string[];
+  selected: string[];
+  onChange: (tags: string[]) => void;
+}
+
+export function TagPicker({ availableTags, selected, onChange }: TagPickerProps) {
+  const [input, setInput] = useState("");
+  const [open, setOpen] = useState(false);
+  const [highlight, setHighlight] = useState(0);
+  const inputRef = useRef<HTMLInputElement>(null);
+
+  const suggestions = availableTags.filter((tag) => {
+    const isSelected = selected.some((s) => s.toLowerCase() === tag.toLowerCase());
+    if (isSelected) return false;
+    if (input.trim() === "") return true;
+    return tag.toLowerCase().includes(input.trim().toLowerCase());
+  });
+
+  function addTag(name: string) {
+    const trimmed = name.trim();
+    if (!trimmed) return;
+    const alreadySelected = selected.some((s) => s.toLowerCase() === trimmed.toLowerCase());
+    if (!alreadySelected) {
+      onChange([...selected, trimmed]);
+    }
+    setInput("");
+    setHighlight(0);
+  }
+
+  function removeTag(name: string) {
+    onChange(selected.filter((t) => t !== name));
+  }
+
+  function handleKeyDown(e: React.KeyboardEvent<HTMLInputElement>) {
+    if (e.key === "Enter") {
+      e.preventDefault();
+      if (open && suggestions.length > 0) {
+        addTag(suggestions[highlight]);
+      } else if (input.trim()) {
+        addTag(input);
+      }
+      return;
+    }
+    if (e.key === ",") {
+      e.preventDefault();
+      if (input.trim()) addTag(input);
+      return;
+    }
+    if (e.key === "Backspace" && input === "" && selected.length > 0) {
+      removeTag(selected[selected.length - 1]);
+      return;
+    }
+    if (e.key === "ArrowDown") {
+      e.preventDefault();
+      setOpen(true);
+      setHighlight((h) => Math.min(h + 1, Math.max(suggestions.length - 1, 0)));
+      return;
+    }
+    if (e.key === "ArrowUp") {
+      e.preventDefault();
+      setHighlight((h) => Math.max(h - 1, 0));
+      return;
+    }
+    if (e.key === "Escape") {
+      setOpen(false);
+      inputRef.current?.blur();
+    }
+  }
+
+  return (
+    <div className="relative">
+      <div className="flex w-full flex-wrap items-center gap-1.5 rounded-[var(--radius-sm)] border border-[var(--color-hairline)] bg-[var(--color-surface)] px-2 py-1.5 focus-within:border-[var(--color-accent)] focus-within:ring-[3px] focus-within:ring-[var(--color-accent)]/20">
+        {selected.map((tag) => (
+          <span
+            key={tag}
+            className="flex items-center gap-1 rounded-[var(--radius-full)] border border-[var(--color-accent-line)] bg-[var(--color-accent-bg)] py-0.5 pr-1 pl-2 text-[var(--text-2xs)] font-medium text-[var(--color-accent)]"
+          >
+            {tag}
+            <button
+              type="button"
+              onClick={() => removeTag(tag)}
+              aria-label={`Remove ${tag}`}
+              className="flex h-3.5 w-3.5 items-center justify-center rounded-full hover:bg-[var(--color-accent)]/20"
+            >
+              <XIcon size={9} />
+            </button>
+          </span>
+        ))}
+        <input
+          ref={inputRef}
+          type="text"
+          value={input}
+          onChange={(e) => {
+            setInput(e.target.value);
+            setOpen(true);
+            setHighlight(0);
+          }}
+          onFocus={() => setOpen(true)}
+          onBlur={() => setTimeout(() => setOpen(false), 100)}
+          onKeyDown={handleKeyDown}
+          placeholder={selected.length === 0 ? "Add tags" : ""}
+          className="min-w-[6rem] flex-1 bg-transparent text-[var(--text-xs)] text-[var(--color-ink)] outline-none placeholder:text-[var(--color-ink-3)]"
+        />
+      </div>
+
+      {open && suggestions.length > 0 && (
+        <ul className="absolute top-full left-0 z-10 mt-1 max-h-40 w-full min-w-[10rem] overflow-y-auto rounded-[var(--radius-sm)] border border-[var(--color-hairline)] bg-[var(--color-surface)] py-1 shadow-[0_4px_16px_rgba(0,0,0,0.12)]">
+          {suggestions.map((tag, i) => (
+            <li key={tag}>
+              <button
+                type="button"
+                onMouseDown={(e) => e.preventDefault()}
+                onClick={() => addTag(tag)}
+                onMouseEnter={() => setHighlight(i)}
+                className={`w-full px-3 py-1.5 text-left text-[var(--text-xs)] ${
+                  i === highlight
+                    ? "bg-[var(--color-accent-bg)] text-[var(--color-accent)]"
+                    : "text-[var(--color-ink-2)]"
+                }`}
+              >
+                {tag}
+              </button>
+            </li>
+          ))}
+        </ul>
+      )}
+    </div>
+  );
+}
