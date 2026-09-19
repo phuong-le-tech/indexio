@@ -1,26 +1,80 @@
 @import "tailwindcss";
 
-:root {
-  --background: #ffffff;
-  --foreground: #171717;
-}
+@theme {
+  --font-sans: "Inter", ui-sans-serif, system-ui;
+  --font-mono: "JetBrains Mono", ui-monospace;
 
-@theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
+  --color-page: #faf8f7;
+  --color-surface: #ffffff;
+  --color-surface-hover: #f5f5f2;
+  --color-inset: #f2f2ef;
+  --color-skeleton: #ededea;
+  --color-hairline: #e8e8e3;
+  --color-line: #deded8;
+  --color-line-strong: #c9c9c1;
+  --color-ink: #16161a;
+  --color-ink-2: #5a5a62;
+  --color-ink-3: #8a8a92;
+  --color-inverse: #ffffff;
+  --color-accent: #a8500b;
+  --color-accent-solid: #c25f10;
+  --color-accent-hover: #8f4309;
+  --color-accent-bg: #f6ebe0;
+  --color-accent-line: #e3c9ae;
+  --color-danger: #a62226;
+  --color-danger-bg: #faebeb;
+
+  --text-2xs: 0.6875rem;
+  --text-xs: 0.75rem;
+  --text-sm: 0.8125rem;
+  --text-base: 0.9375rem;
+  --text-lg: 1.0625rem;
+  --text-xl: 1.375rem;
+  --text-2xl: 1.875rem;
+
+  --radius-sm: 6px;
+  --radius-md: 10px;
+  --radius-lg: 14px;
+  --radius-full: 999px;
+  --container-col: 42.5rem;
+  --ease-out-quint: cubic-bezier(0.16, 1, 0.3, 1);
 }
 
 @media (prefers-color-scheme: dark) {
   :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
+    --color-page: #0c0c0d;
+    --color-surface: #151517;
+    --color-surface-hover: #1d1d20;
+    --color-inset: #1a1a1c;
+    --color-skeleton: #1f1f22;
+    --color-hairline: #232327;
+    --color-line: #2b2b30;
+    --color-line-strong: #3a3a41;
+    --color-ink: #f3f3f0;
+    --color-ink-2: #9c9ca4;
+    --color-ink-3: #6b6b74;
+    --color-inverse: #0c0c0d;
+    --color-accent: #f2a25c;
+    --color-accent-solid: #f2a25c;
+    --color-accent-hover: #f7b577;
+    --color-accent-bg: #2b1e12;
+    --color-accent-line: #4a3520;
+    --color-danger: #f08085;
+    --color-danger-bg: #2c1517;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    transition-duration: 0.01ms !important;
   }
 }
 
 body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  background: var(--color-page);
+  color: var(--color-ink);
+  font-family: var(--font-sans);
 }

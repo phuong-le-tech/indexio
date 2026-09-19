@@ -32,28 +32,33 @@ export default function LoginPage() {
   }
 
   return (
-    <div className="flex min-h-screen items-center justify-center bg-gray-50">
-      <form
-        onSubmit={handleSubmit}
-        className="w-full max-w-sm space-y-4 rounded-lg border border-gray-200 bg-white p-8 shadow-sm"
-      >
-        <h1 className="text-xl font-semibold text-gray-900">Indexio</h1>
-        <input
-          type="password"
-          value={password}
-          onChange={(e) => setPassword(e.target.value)}
-          placeholder="Password"
-          autoFocus
-          className="w-full rounded-md border border-gray-300 px-3 py-2 text-sm focus:border-gray-500 focus:outline-none"
-        />
-        {error && <p className="text-sm text-red-600">{error}</p>}
-        <button
-          type="submit"
-          disabled={loading}
-          className="w-full rounded-md bg-gray-900 px-3 py-2 text-sm font-medium text-white hover:bg-gray-800 disabled:opacity-50"
+    <div className="flex min-h-screen items-center justify-center bg-[var(--color-page)]">
+      <form onSubmit={handleSubmit} className="flex w-80 flex-col items-center gap-6">
+        <h1
+          className="text-[var(--text-2xl)] font-semibold text-[var(--color-ink)]"
+          style={{ letterSpacing: "-0.9px" }}
         >
-          {loading ? "Checking..." : "Enter"}
-        </button>
+          Indexio
+        </h1>
+
+        <div className="flex w-full flex-col gap-3">
+          <input
+            type="password"
+            value={password}
+            onChange={(e) => setPassword(e.target.value)}
+            placeholder="Password"
+            autoFocus
+            className="h-12 w-full rounded-[var(--radius-md)] border border-[var(--color-line-strong)] bg-[var(--color-surface)] px-4 text-[var(--text-base)] text-[var(--color-ink)] outline-none placeholder:text-[var(--color-ink-3)] focus:border-[var(--color-accent)] focus:ring-[3px] focus:ring-[var(--color-accent)]/20"
+          />
+          {error && <p className="text-[var(--text-sm)] text-[var(--color-danger)]">{error}</p>}
+          <button
+            type="submit"
+            disabled={loading}
+            className="h-11 w-full rounded-[var(--radius-md)] bg-[var(--color-accent-solid)] text-[var(--text-sm)] font-medium text-[var(--color-inverse)] transition-opacity hover:opacity-90 disabled:opacity-50"
+          >
+            {loading ? "Checking…" : "Unlock"}
+          </button>
+        </div>
       </form>
     </div>
   );

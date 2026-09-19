@@ -1,20 +1,46 @@
 "use client";
 
-import { useState } from "react";
+import { useRef, useState } from "react";
+import { LinkIcon } from "@/components/ui/Icon";
 
 interface LinkFormProps {
   onCreated: () => void;
+}
+
+function isValidUrl(value: string): boolean {
+  try {
+    const parsed = new URL(value);
+    return parsed.protocol === "http:" || parsed.protocol === "https:";
+  } catch {
+    return false;
+  }
 }
 
 export function LinkForm({ onCreated }: LinkFormProps) {
   const [url, setUrl] = useState("");
   const [tags, setTags] = useState("");
   const [notes, setNotes] = useState("");
+  const [expanded, setExpanded] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [savedFlash, setSavedFlash] = useState(false);
+  const formRef = useRef<HTMLFormElement>(null);
+
+  const canSubmit = isValidUrl(url) && !loading;
+
+  function collapse() {
+    if (url.trim() === "") {
+      setExpanded(false);
+      setTags("");
+      setNotes("");
+      setError(null);
+    }
+  }
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
+    if (!canSubmit) return;
+
     setLoading(true);
     setError(null);
 
@@ -42,43 +68,73 @@ export function LinkForm({ onCreated }: LinkFormProps) {
     setUrl("");
     setTags("");
     setNotes("");
+    setExpanded(false);
+    setSavedFlash(true);
+    setTimeout(() => setSavedFlash(false), 2000);
     onCreated();
   }
 
+  function handleKeyDown(e: React.KeyboardEvent) {
+    if (e.key === "Escape") {
+      (e.target as HTMLElement).blur();
+      collapse();
+    }
+  }
+
   return (
-    <form onSubmit={handleSubmit} className="space-y-3 rounded-lg border border-gray-200 bg-white p-4">
-      <input
-        type="url"
-        required
-        value={url}
-        onChange={(e) => setUrl(e.target.value)}
-        placeholder="https://example.com"
-        className="w-full rounded-md border border-gray-300 px-3 py-2 text-sm focus:border-gray-500 focus:outline-none"
-      />
-      <div className="flex gap-3">
+    <form
+      ref={formRef}
+      onSubmit={handleSubmit}
+      onKeyDown={handleKeyDown}
+      className="flex flex-col gap-3 rounded-[var(--radius-md)] bg-[var(--color-inset)] p-1"
+    >
+      <div className="flex h-11 items-center gap-3 pr-2 pl-4">
+        <LinkIcon size={15} className="shrink-0 text-[var(--color-ink-3)]" />
         <input
-          type="text"
-          value={tags}
-          onChange={(e) => setTags(e.target.value)}
-          placeholder="tags, comma, separated"
-          className="flex-1 rounded-md border border-gray-300 px-3 py-2 text-sm focus:border-gray-500 focus:outline-none"
+          type="url"
+          required
+          value={url}
+          onChange={(e) => setUrl(e.target.value)}
+          onFocus={() => setExpanded(true)}
+          onBlur={collapse}
+          placeholder="Paste a URL to save"
+          className="min-w-0 flex-1 bg-transparent text-[var(--text-sm)] text-[var(--color-ink)] outline-none placeholder:text-[var(--color-ink-3)]"
         />
+        {savedFlash ? (
+          <span className="shrink-0 text-[var(--text-xs)] font-medium text-[var(--color-accent)]">
+            Saved
+          </span>
+        ) : (
+          <button
+            type="submit"
+            disabled={!canSubmit}
+            className="shrink-0 rounded-[var(--radius-sm)] bg-[var(--color-accent-solid)] px-3 py-1.5 text-[var(--text-xs)] font-medium text-[var(--color-inverse)] transition-opacity hover:opacity-90 disabled:opacity-40"
+          >
+            {loading ? "Adding…" : "Add link"}
+          </button>
+        )}
       </div>
-      <textarea
-        value={notes}
-        onChange={(e) => setNotes(e.target.value)}
-        placeholder="Notes (optional)"
-        rows={2}
-        className="w-full rounded-md border border-gray-300 px-3 py-2 text-sm focus:border-gray-500 focus:outline-none"
-      />
-      {error && <p className="text-sm text-red-600">{error}</p>}
-      <button
-        type="submit"
-        disabled={loading}
-        className="rounded-md bg-gray-900 px-4 py-2 text-sm font-medium text-white hover:bg-gray-800 disabled:opacity-50"
-      >
-        {loading ? "Adding..." : "Add link"}
-      </button>
+
+      {expanded && (
+        <div className="flex flex-col gap-2 px-4 pb-3">
+          <input
+            type="text"
+            value={tags}
+            onChange={(e) => setTags(e.target.value)}
+            placeholder="tags, comma, separated"
+            className="w-full rounded-[var(--radius-sm)] border border-[var(--color-hairline)] bg-[var(--color-surface)] px-3 py-1.5 text-[var(--text-xs)] text-[var(--color-ink)] outline-none placeholder:text-[var(--color-ink-3)] focus:border-[var(--color-accent)]"
+          />
+          <textarea
+            value={notes}
+            onChange={(e) => setNotes(e.target.value)}
+            placeholder="Notes (optional)"
+            rows={2}
+            className="w-full rounded-[var(--radius-sm)] border border-[var(--color-hairline)] bg-[var(--color-surface)] px-3 py-1.5 text-[var(--text-xs)] text-[var(--color-ink)] outline-none placeholder:text-[var(--color-ink-3)] focus:border-[var(--color-accent)]"
+          />
+          {error && <p className="text-[var(--text-xs)] text-[var(--color-danger)]">{error}</p>}
+          <p className="text-[var(--text-2xs)] text-[var(--color-ink-3)]">⏎ to save · esc to close</p>
+        </div>
+      )}
     </form>
   );
 }
