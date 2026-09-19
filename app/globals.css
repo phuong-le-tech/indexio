@@ -129,6 +129,15 @@
   }
 }
 
+/* Hover-revealed controls (card edit/delete) have no way to reveal on a
+   touch device, since there is no hover. Keep them always visible there
+   instead of permanently hidden. */
+@media (hover: none) {
+  .card-actions {
+    opacity: 1;
+  }
+}
+
 body {
   background: var(--color-page);
   color: var(--color-ink);

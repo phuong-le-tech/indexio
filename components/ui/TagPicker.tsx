@@ -2,6 +2,7 @@
 
 import { useRef, useState } from "react";
 import { XIcon } from "@/components/ui/Icon";
+import { getTagColor } from "@/lib/tagColors";
 
 interface TagPickerProps {
   availableTags: string[];
@@ -76,22 +77,26 @@ export function TagPicker({ availableTags, selected, onChange }: TagPickerProps)
   return (
     <div className="relative">
       <div className="flex w-full flex-wrap items-center gap-1.5 rounded-[var(--radius-sm)] border border-[var(--color-hairline)] bg-[var(--color-surface)] px-2 py-1.5 focus-within:border-[var(--color-accent)] focus-within:ring-[3px] focus-within:ring-[var(--color-accent)]/20">
-        {selected.map((tag) => (
-          <span
-            key={tag}
-            className="flex items-center gap-1 rounded-[var(--radius-full)] border border-[var(--color-accent-line)] bg-[var(--color-accent-bg)] py-0.5 pr-1 pl-2 text-[var(--text-2xs)] font-medium text-[var(--color-accent)]"
-          >
-            {tag}
-            <button
-              type="button"
-              onClick={() => removeTag(tag)}
-              aria-label={`Remove ${tag}`}
-              className="flex h-3.5 w-3.5 items-center justify-center rounded-full hover:bg-[var(--color-accent)]/20"
+        {selected.map((tag) => {
+          const color = getTagColor(tag);
+          return (
+            <span
+              key={tag}
+              style={{ background: color.bg, borderColor: color.border, color: color.text }}
+              className="flex items-center gap-1 rounded-[var(--radius-full)] border py-0.5 pr-1 pl-2 text-[var(--text-2xs)] font-medium"
             >
-              <XIcon size={9} />
-            </button>
-          </span>
-        ))}
+              {tag}
+              <button
+                type="button"
+                onClick={() => removeTag(tag)}
+                aria-label={`Remove ${tag}`}
+                className="flex h-3.5 w-3.5 items-center justify-center rounded-full hover:bg-black/10"
+              >
+                <XIcon size={9} />
+              </button>
+            </span>
+          );
+        })}
         <input
           ref={inputRef}
           type="text"
@@ -111,23 +116,25 @@ export function TagPicker({ availableTags, selected, onChange }: TagPickerProps)
 
       {open && suggestions.length > 0 && (
         <ul className="absolute top-full left-0 z-10 mt-1 max-h-40 w-full min-w-[10rem] overflow-y-auto rounded-[var(--radius-sm)] border border-[var(--color-hairline)] bg-[var(--color-surface)] py-1 shadow-[0_4px_16px_rgba(0,0,0,0.12)]">
-          {suggestions.map((tag, i) => (
-            <li key={tag}>
-              <button
-                type="button"
-                onMouseDown={(e) => e.preventDefault()}
-                onClick={() => addTag(tag)}
-                onMouseEnter={() => setHighlight(i)}
-                className={`w-full px-3 py-1.5 text-left text-[var(--text-xs)] ${
-                  i === highlight
-                    ? "bg-[var(--color-accent-bg)] text-[var(--color-accent)]"
-                    : "text-[var(--color-ink-2)]"
-                }`}
-              >
-                {tag}
-              </button>
-            </li>
-          ))}
+          {suggestions.map((tag, i) => {
+            const color = getTagColor(tag);
+            return (
+              <li key={tag}>
+                <button
+                  type="button"
+                  onMouseDown={(e) => e.preventDefault()}
+                  onClick={() => addTag(tag)}
+                  onMouseEnter={() => setHighlight(i)}
+                  style={i === highlight ? { background: color.bg, color: color.text } : undefined}
+                  className={`w-full px-3 py-1.5 text-left text-[var(--text-xs)] ${
+                    i === highlight ? "" : "text-[var(--color-ink-2)]"
+                  }`}
+                >
+                  {tag}
+                </button>
+              </li>
+            );
+          })}
         </ul>
       )}
     </div>

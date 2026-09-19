@@ -148,7 +148,7 @@ function LinkCard({ link, deleting, editing, onEdit, onCancelEdit, onSaved, onDe
       </div>
 
       {!editing && (
-        <div className="pointer-events-none absolute top-3 right-3 z-[2] flex shrink-0 items-center gap-1 opacity-0 transition-opacity group-hover:opacity-100 group-focus-within:opacity-100">
+        <div className="card-actions pointer-events-none absolute top-3 right-3 z-[2] flex shrink-0 items-center gap-1 opacity-0 transition-opacity group-hover:opacity-100 group-focus-within:opacity-100">
           <button
             type="button"
             onClick={onEdit}
