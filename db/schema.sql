@@ -33,3 +33,14 @@ CREATE TABLE IF NOT EXISTS link_tags (
 );
 
 CREATE INDEX IF NOT EXISTS link_tags_tag_id_idx ON link_tags (tag_id);
+
+-- Seed tag vocabulary from the user's Notion "Tech Ressources" database
+-- Category field, so they're available in the tag picker/filter immediately.
+INSERT INTO tags (name) VALUES
+  ('UI/UX Design'), ('Coding Practice'), ('Learning Resources'), ('AI/ML'),
+  ('Cloud/DevOps'), ('Development Tools'), ('Reference/APIs'), ('Community'),
+  ('GitHub Projects'), ('Idea'), ('Form'), ('No-Code/Low-Code'), ('Prod'),
+  ('VPS'), ('Serverless'), ('BDD'), ('Animation'), ('SEO'), ('Analytics'),
+  ('Marketing'), ('Affilation'), ('Copywriting'), ('Security'), ('Monitoring'),
+  ('RGPD'), ('Legal'), ('Payment')
+ON CONFLICT (name) DO NOTHING;

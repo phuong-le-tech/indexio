@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { LinkIcon, PencilIcon, TrashIcon } from "@/components/ui/Icon";
 import { hostname, relativeTime } from "@/lib/format";
+import { getTagColor } from "@/lib/tagColors";
 import type { Link } from "@/lib/types";
 
 interface LinkListProps {
@@ -129,14 +130,18 @@ function LinkCard({ link, deleting, editing, onEdit, onCancelEdit, onSaved, onDe
         ) : (
           link.tags.length > 0 && (
             <div className="mt-3 flex flex-wrap gap-1.5">
-              {link.tags.map((tag) => (
-                <span
-                  key={tag}
-                  className="rounded-[var(--radius-sm)] bg-[var(--color-inset)] px-2 py-0.5 text-[var(--text-2xs)] text-[var(--color-ink-2)]"
-                >
-                  {tag}
-                </span>
-              ))}
+              {link.tags.map((tag) => {
+                const color = getTagColor(tag);
+                return (
+                  <span
+                    key={tag}
+                    style={{ background: color.bg, color: color.text }}
+                    className="rounded-[var(--radius-sm)] px-2 py-0.5 text-[var(--text-2xs)]"
+                  >
+                    {tag}
+                  </span>
+                );
+              })}
             </div>
           )
         )}
