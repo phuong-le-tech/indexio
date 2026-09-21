@@ -7,6 +7,7 @@ import { LinkForm } from "@/components/link-form/LinkForm";
 import { LinkList } from "@/components/link-list/LinkList";
 import { LinkListSkeleton } from "@/components/link-list/LinkListSkeleton";
 import { SearchBar } from "@/components/ui/SearchBar";
+import { ShortcutsHelp } from "@/components/ui/ShortcutsHelp";
 import { TagFilter } from "@/components/ui/TagFilter";
 import type { Link, Tag } from "@/lib/types";
 
@@ -127,6 +128,7 @@ function HomePageContent() {
       <div className="mb-6 flex items-center justify-between">
         <h1 className="text-[var(--text-xl)] text-[var(--color-ink)]">Indexio</h1>
         <div className="flex items-center gap-4">
+          <ShortcutsHelp />
           <NavLink
             href="/tags"
             className="text-[var(--text-sm)] text-[var(--color-ink-3)] hover:text-[var(--color-ink)]"

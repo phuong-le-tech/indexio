@@ -37,6 +37,13 @@ export default function TagsPage() {
 
       {loading ? (
         <p className="text-[var(--text-sm)] text-[var(--color-ink-3)]">Loading…</p>
+      ) : tags.length === 0 ? (
+        <div className="rounded-[var(--radius-lg)] border border-dashed border-[var(--color-line)] px-5 py-12 text-center">
+          <p className="text-[var(--text-sm)] text-[var(--color-ink-2)]">No tags yet.</p>
+          <p className="mt-1 text-[var(--text-xs)] text-[var(--color-ink-3)]">
+            Tags you add to links will show up here.
+          </p>
+        </div>
       ) : (
         <ul className="flex flex-col gap-2">
           {tags.map((tag) => (
