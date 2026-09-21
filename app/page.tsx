@@ -8,6 +8,7 @@ import { LinkList } from "@/components/link-list/LinkList";
 import { LinkListSkeleton } from "@/components/link-list/LinkListSkeleton";
 import { SearchBar } from "@/components/ui/SearchBar";
 import { TagFilter } from "@/components/ui/TagFilter";
+import { setTagColorOverrides } from "@/lib/tagColors";
 import type { Link, Tag } from "@/lib/types";
 
 const SKELETON_DELAY_MS = 200;
@@ -67,7 +68,9 @@ function HomePageContent() {
   const loadTags = useCallback(async () => {
     const res = await fetch("/api/tags");
     const data = await res.json();
-    setTags(data.tags || []);
+    const fetched: Tag[] = data.tags || [];
+    setTags(fetched);
+    setTagColorOverrides(fetched);
   }, []);
 
   useEffect(() => {

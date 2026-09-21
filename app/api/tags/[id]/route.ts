@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { pool } from "@/lib/db";
+import { isTagColorFamily } from "@/lib/tagColors";
 
 interface RouteParams {
   params: Promise<{ id: string }>;
@@ -13,15 +14,45 @@ export async function PATCH(request: NextRequest, { params }: RouteParams) {
   }
 
   const body = await request.json();
-  const name = typeof body.name === "string" ? body.name.trim() : "";
-  if (!name) {
-    return NextResponse.json({ error: "name is required" }, { status: 400 });
+  const hasName = "name" in body;
+  const hasColor = "color" in body;
+
+  if (!hasName && !hasColor) {
+    return NextResponse.json({ error: "name or color is required" }, { status: 400 });
   }
+
+  let name: string | undefined;
+  if (hasName) {
+    name = typeof body.name === "string" ? body.name.trim() : "";
+    if (!name) {
+      return NextResponse.json({ error: "name is required" }, { status: 400 });
+    }
+  }
+
+  let color: string | null | undefined;
+  if (hasColor) {
+    color = body.color === null ? null : String(body.color);
+    if (color !== null && !isTagColorFamily(color)) {
+      return NextResponse.json({ error: "Invalid color" }, { status: 400 });
+    }
+  }
+
+  const setClauses: string[] = [];
+  const values: unknown[] = [];
+  if (name !== undefined) {
+    values.push(name);
+    setClauses.push(`name = $${values.length}`);
+  }
+  if (color !== undefined) {
+    values.push(color);
+    setClauses.push(`color = $${values.length}`);
+  }
+  values.push(tagId);
 
   try {
     const result = await pool.query(
-      `UPDATE tags SET name = $1 WHERE id = $2 RETURNING id, name`,
-      [name, tagId]
+      `UPDATE tags SET ${setClauses.join(", ")} WHERE id = $${values.length} RETURNING id, name, color`,
+      values
     );
     if (result.rows.length === 0) {
       return NextResponse.json({ error: "Tag not found" }, { status: 404 });

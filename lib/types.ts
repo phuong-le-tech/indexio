@@ -14,4 +14,5 @@ export interface Tag {
   id: number;
   name: string;
   link_count: number;
+  color: string | null;
 }
