@@ -23,6 +23,29 @@ export default function TagsPage() {
     loadTags();
   }, []);
 
+  function renderTagList() {
+    if (loading) {
+      return <p className="text-[var(--text-sm)] text-[var(--color-ink-3)]">Loading…</p>;
+    }
+    if (tags.length === 0) {
+      return (
+        <div className="rounded-[var(--radius-lg)] border border-dashed border-[var(--color-line)] px-5 py-12 text-center">
+          <p className="text-[var(--text-sm)] text-[var(--color-ink-2)]">No tags yet.</p>
+          <p className="mt-1 text-[var(--text-xs)] text-[var(--color-ink-3)]">
+            Tags you add to links will show up here.
+          </p>
+        </div>
+      );
+    }
+    return (
+      <ul className="flex flex-col gap-2">
+        {tags.map((tag) => (
+          <TagRow key={tag.id} tag={tag} allTags={tags} onChanged={loadTags} />
+        ))}
+      </ul>
+    );
+  }
+
   return (
     <div className="mx-auto w-full max-w-[var(--container-col)] px-5 py-12">
       <div className="mb-6 flex items-center justify-between">
@@ -35,22 +58,7 @@ export default function TagsPage() {
         </Link>
       </div>
 
-      {loading ? (
-        <p className="text-[var(--text-sm)] text-[var(--color-ink-3)]">Loading…</p>
-      ) : tags.length === 0 ? (
-        <div className="rounded-[var(--radius-lg)] border border-dashed border-[var(--color-line)] px-5 py-12 text-center">
-          <p className="text-[var(--text-sm)] text-[var(--color-ink-2)]">No tags yet.</p>
-          <p className="mt-1 text-[var(--text-xs)] text-[var(--color-ink-3)]">
-            Tags you add to links will show up here.
-          </p>
-        </div>
-      ) : (
-        <ul className="flex flex-col gap-2">
-          {tags.map((tag) => (
-            <TagRow key={tag.id} tag={tag} allTags={tags} onChanged={loadTags} />
-          ))}
-        </ul>
-      )}
+      {renderTagList()}
     </div>
   );
 }

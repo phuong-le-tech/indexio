@@ -41,13 +41,21 @@ export function ShortcutsHelp() {
 
       {open && (
         <div
+          role="button"
+          tabIndex={0}
+          aria-label="Close keyboard shortcuts"
           className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 px-5"
-          onClick={() => setOpen(false)}
+          onClick={(e) => {
+            if (e.target === e.currentTarget) setOpen(false);
+          }}
+          onKeyDown={(e) => {
+            if (e.target === e.currentTarget && (e.key === "Enter" || e.key === " ")) {
+              e.preventDefault();
+              setOpen(false);
+            }
+          }}
         >
-          <div
-            onClick={(e) => e.stopPropagation()}
-            className="w-full max-w-sm rounded-[var(--radius-lg)] border border-[var(--color-hairline)] bg-[var(--color-surface)] p-5"
-          >
+          <div className="w-full max-w-sm rounded-[var(--radius-lg)] border border-[var(--color-hairline)] bg-[var(--color-surface)] p-5">
             <div className="mb-4 flex items-center justify-between">
               <h2 className="text-[var(--text-base)] font-semibold text-[var(--color-ink)]">
                 Keyboard shortcuts
