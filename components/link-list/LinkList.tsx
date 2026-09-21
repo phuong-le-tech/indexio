@@ -12,9 +12,21 @@ interface LinkListProps {
   hasMore?: boolean;
   loadingMore?: boolean;
   onLoadMore?: () => void;
+  selectionMode?: boolean;
+  selectedIds?: Set<number>;
+  onToggleSelect?: (id: number) => void;
 }
 
-export function LinkList({ links, onDeleted, hasMore, loadingMore, onLoadMore }: LinkListProps) {
+export function LinkList({
+  links,
+  onDeleted,
+  hasMore,
+  loadingMore,
+  onLoadMore,
+  selectionMode,
+  selectedIds,
+  onToggleSelect,
+}: LinkListProps) {
   const [deletingIds, setDeletingIds] = useState<Set<number>>(new Set());
   const [editingId, setEditingId] = useState<number | null>(null);
 
@@ -46,7 +58,10 @@ export function LinkList({ links, onDeleted, hasMore, loadingMore, onLoadMore }:
           key={link.id}
           link={link}
           deleting={deletingIds.has(link.id)}
-          editing={editingId === link.id}
+          editing={!selectionMode && editingId === link.id}
+          selectionMode={Boolean(selectionMode)}
+          selected={selectedIds?.has(link.id) ?? false}
+          onToggleSelect={() => onToggleSelect?.(link.id)}
           onEdit={() => setEditingId(link.id)}
           onCancelEdit={() => setEditingId(null)}
           onSaved={() => {
@@ -76,34 +91,86 @@ interface LinkCardProps {
   link: Link;
   deleting: boolean;
   editing: boolean;
+  selectionMode: boolean;
+  selected: boolean;
+  onToggleSelect: () => void;
   onEdit: () => void;
   onCancelEdit: () => void;
   onSaved: () => void;
   onDelete: () => void;
 }
 
-function LinkCard({ link, deleting, editing, onEdit, onCancelEdit, onSaved, onDelete }: LinkCardProps) {
+function LinkCard({
+  link,
+  deleting,
+  editing,
+  selectionMode,
+  selected,
+  onToggleSelect,
+  onEdit,
+  onCancelEdit,
+  onSaved,
+  onDelete,
+}: LinkCardProps) {
   const host = hostname(link.url);
   const displayTitle = link.title || `${host}${new URL(link.url).pathname}`;
 
   return (
     <li
-      className={`group relative flex gap-4 rounded-[var(--radius-lg)] border border-[var(--color-hairline)] bg-[var(--color-surface)] p-5 transition-all duration-150 ${
+      className={`group relative flex gap-4 rounded-[var(--radius-lg)] border p-5 transition-all duration-150 ${
+        selected
+          ? "border-[var(--color-accent)] bg-[var(--color-accent-bg)]"
+          : "border-[var(--color-hairline)] bg-[var(--color-surface)]"
+      } ${
         deleting
           ? "scale-[0.98] opacity-40"
-          : "hover:border-[var(--color-line)] hover:bg-[var(--color-surface-hover)] focus-within:border-[var(--color-accent)] focus-within:ring-[3px] focus-within:ring-[var(--color-accent)]/20"
+          : selected
+            ? ""
+            : "hover:border-[var(--color-line)] hover:bg-[var(--color-surface-hover)] focus-within:border-[var(--color-accent)] focus-within:ring-[3px] focus-within:ring-[var(--color-accent)]/20"
       }`}
     >
-      <a
-        href={link.url}
-        target="_blank"
-        rel="noopener noreferrer"
-        aria-label={displayTitle}
-        className="absolute inset-0 z-0 rounded-[var(--radius-lg)]"
-      />
+      {selectionMode ? (
+        <button
+          type="button"
+          onClick={onToggleSelect}
+          aria-label={selected ? `Deselect ${displayTitle}` : `Select ${displayTitle}`}
+          aria-pressed={selected}
+          className="absolute inset-0 z-0 rounded-[var(--radius-lg)]"
+        />
+      ) : (
+        <a
+          href={link.url}
+          target="_blank"
+          rel="noopener noreferrer"
+          aria-label={displayTitle}
+          className="absolute inset-0 z-0 rounded-[var(--radius-lg)]"
+        />
+      )}
 
-      <div className="pointer-events-none relative z-[1] flex h-5 w-5 shrink-0 items-center justify-center rounded-[var(--radius-sm)] border border-[var(--color-hairline)] bg-[var(--color-inset)]">
-        {link.favicon_url ? (
+      <div
+        className={`pointer-events-none relative z-[1] flex h-5 w-5 shrink-0 items-center justify-center rounded-[var(--radius-sm)] border ${
+          selectionMode && selected
+            ? "border-[var(--color-accent)] bg-[var(--color-accent-solid)]"
+            : "border-[var(--color-hairline)] bg-[var(--color-inset)]"
+        }`}
+      >
+        {selectionMode ? (
+          selected && (
+            <svg
+              width="12"
+              height="12"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="var(--color-inverse)"
+              strokeWidth={3}
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              aria-hidden="true"
+            >
+              <path d="M20 6 9 17l-5-5" />
+            </svg>
+          )
+        ) : link.favicon_url ? (
           // eslint-disable-next-line @next/next/no-img-element
           <img src={link.favicon_url} alt="" width={12} height={12} className="rounded-[2px]" />
         ) : (
@@ -162,7 +229,7 @@ function LinkCard({ link, deleting, editing, onEdit, onCancelEdit, onSaved, onDe
         )}
       </div>
 
-      {!editing && (
+      {!editing && !selectionMode && (
         <div className="card-actions pointer-events-none absolute top-3 right-3 z-[2] flex shrink-0 items-center gap-1 opacity-0 transition-opacity group-hover:opacity-100 group-focus-within:opacity-100">
           <button
             type="button"

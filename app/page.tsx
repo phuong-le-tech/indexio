@@ -36,6 +36,11 @@ function HomePageContent() {
   const [totalLinks, setTotalLinks] = useState(0);
   const [hasMore, setHasMore] = useState(false);
   const [loadingMore, setLoadingMore] = useState(false);
+  const [selectionMode, setSelectionMode] = useState(false);
+  const [selectedIds, setSelectedIds] = useState<Set<number>>(new Set());
+  const [bulkTagInput, setBulkTagInput] = useState("");
+  const [bulkDeleteArmed, setBulkDeleteArmed] = useState(false);
+  const [bulkBusy, setBulkBusy] = useState(false);
 
   const loadLinks = useCallback(
     async (offset = 0) => {
@@ -116,6 +121,57 @@ function HomePageContent() {
     loadTags();
   }
 
+  function toggleSelectionMode() {
+    setSelectionMode((prev) => !prev);
+    setSelectedIds(new Set());
+    setBulkTagInput("");
+    setBulkDeleteArmed(false);
+  }
+
+  function toggleSelect(id: number) {
+    setSelectedIds((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) {
+        next.delete(id);
+      } else {
+        next.add(id);
+      }
+      return next;
+    });
+  }
+
+  async function handleBulkDelete() {
+    if (!bulkDeleteArmed) {
+      setBulkDeleteArmed(true);
+      setTimeout(() => setBulkDeleteArmed(false), 3000);
+      return;
+    }
+    setBulkBusy(true);
+    await fetch("/api/links/bulk", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ ids: Array.from(selectedIds), action: "delete" }),
+    });
+    setBulkBusy(false);
+    setBulkDeleteArmed(false);
+    toggleSelectionMode();
+    handleChanged();
+  }
+
+  async function handleBulkAddTag() {
+    const tag = bulkTagInput.trim();
+    if (!tag || selectedIds.size === 0) return;
+    setBulkBusy(true);
+    await fetch("/api/links/bulk", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ ids: Array.from(selectedIds), action: "add_tag", tag }),
+    });
+    setBulkBusy(false);
+    setBulkTagInput("");
+    handleChanged();
+  }
+
   async function handleLogout() {
     await fetch("/api/auth", { method: "DELETE" });
     router.push("/login");
@@ -132,6 +188,13 @@ function HomePageContent() {
         <h1 className="text-[var(--text-xl)] text-[var(--color-ink)]">Indexio</h1>
         <div className="flex items-center gap-4">
           <ShortcutsHelp />
+          <button
+            type="button"
+            onClick={toggleSelectionMode}
+            className="text-[var(--text-sm)] text-[var(--color-ink-3)] hover:text-[var(--color-ink)]"
+          >
+            {selectionMode ? "Cancel" : "Select"}
+          </button>
           <NavLink
             href="/tags"
             className="text-[var(--text-sm)] text-[var(--color-ink-3)] hover:text-[var(--color-ink)]"
@@ -156,6 +219,42 @@ function HomePageContent() {
         />
         <LinkForm onCreated={handleChanged} availableTags={tags.map((t) => t.name)} />
       </div>
+
+      {selectionMode && (
+        <div className="mb-4 flex flex-wrap items-center gap-2 rounded-[var(--radius-md)] bg-[var(--color-inset)] px-3 py-2">
+          <span className="text-[var(--text-xs)] text-[var(--color-ink-2)]">
+            {selectedIds.size} selected
+          </span>
+          <input
+            type="text"
+            value={bulkTagInput}
+            onChange={(e) => setBulkTagInput(e.target.value)}
+            placeholder="Add tag to selected…"
+            disabled={selectedIds.size === 0 || bulkBusy}
+            className="min-w-0 flex-1 rounded-[var(--radius-sm)] border border-[var(--color-hairline)] bg-[var(--color-surface)] px-2 py-1 text-[var(--text-xs)] text-[var(--color-ink)] outline-none focus:border-[var(--color-accent)] disabled:opacity-50"
+          />
+          <button
+            type="button"
+            onClick={handleBulkAddTag}
+            disabled={!bulkTagInput.trim() || selectedIds.size === 0 || bulkBusy}
+            className="rounded-[var(--radius-sm)] border border-[var(--color-hairline)] px-2 py-1 text-[var(--text-xs)] text-[var(--color-ink-2)] hover:bg-[var(--color-surface-hover)] disabled:opacity-50"
+          >
+            Add tag
+          </button>
+          <button
+            type="button"
+            onClick={handleBulkDelete}
+            disabled={selectedIds.size === 0 || bulkBusy}
+            className={`rounded-[var(--radius-sm)] px-2 py-1 text-[var(--text-xs)] font-medium disabled:opacity-50 ${
+              bulkDeleteArmed
+                ? "bg-[var(--color-danger)] text-[var(--color-inverse)]"
+                : "text-[var(--color-danger)] hover:bg-[var(--color-danger-bg)]"
+            }`}
+          >
+            {bulkDeleteArmed ? "Confirm?" : "Delete"}
+          </button>
+        </div>
+      )}
 
       {tags.length > 0 && (
         <div className="mb-4">
@@ -190,6 +289,9 @@ function HomePageContent() {
           hasMore={hasMore}
           loadingMore={loadingMore}
           onLoadMore={handleLoadMore}
+          selectionMode={selectionMode}
+          selectedIds={selectedIds}
+          onToggleSelect={toggleSelect}
         />
       )}
     </div>
