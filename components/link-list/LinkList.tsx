@@ -12,9 +12,17 @@ interface LinkListProps {
   hasMore?: boolean;
   loadingMore?: boolean;
   onLoadMore?: () => void;
+  brokenIds?: Set<number>;
 }
 
-export function LinkList({ links, onDeleted, hasMore, loadingMore, onLoadMore }: LinkListProps) {
+export function LinkList({
+  links,
+  onDeleted,
+  hasMore,
+  loadingMore,
+  onLoadMore,
+  brokenIds,
+}: LinkListProps) {
   const [deletingIds, setDeletingIds] = useState<Set<number>>(new Set());
   const [editingId, setEditingId] = useState<number | null>(null);
 
@@ -47,6 +55,7 @@ export function LinkList({ links, onDeleted, hasMore, loadingMore, onLoadMore }:
           link={link}
           deleting={deletingIds.has(link.id)}
           editing={editingId === link.id}
+          broken={brokenIds?.has(link.id) ?? false}
           onEdit={() => setEditingId(link.id)}
           onCancelEdit={() => setEditingId(null)}
           onSaved={() => {
@@ -76,13 +85,14 @@ interface LinkCardProps {
   link: Link;
   deleting: boolean;
   editing: boolean;
+  broken: boolean;
   onEdit: () => void;
   onCancelEdit: () => void;
   onSaved: () => void;
   onDelete: () => void;
 }
 
-function LinkCard({ link, deleting, editing, onEdit, onCancelEdit, onSaved, onDelete }: LinkCardProps) {
+function LinkCard({ link, deleting, editing, broken, onEdit, onCancelEdit, onSaved, onDelete }: LinkCardProps) {
   const host = hostname(link.url);
   const displayTitle = link.title || `${host}${new URL(link.url).pathname}`;
 
@@ -122,10 +132,15 @@ function LinkCard({ link, deleting, editing, onEdit, onCancelEdit, onSaved, onDe
           {displayTitle}
         </p>
 
-        <p className="mt-1 flex items-center gap-2 font-mono text-[var(--text-xs)] text-[var(--color-ink-3)]">
-          <span>{host}</span>
+        <p className="mt-1 flex flex-wrap items-center gap-x-2 gap-y-1 font-mono text-[var(--text-xs)] text-[var(--color-ink-3)]">
+          <span className="min-w-0 truncate">{host}</span>
           <span aria-hidden="true">·</span>
-          <span>{relativeTime(link.created_at)}</span>
+          <span className="shrink-0">{relativeTime(link.created_at)}</span>
+          {broken && (
+            <span className="shrink-0 rounded-[var(--radius-sm)] bg-[var(--color-danger-bg)] px-1.5 py-0.5 text-[var(--text-2xs)] text-[var(--color-danger)]">
+              unreachable
+            </span>
+          )}
         </p>
 
         {link.description && (

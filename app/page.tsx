@@ -36,6 +36,8 @@ function HomePageContent() {
   const [totalLinks, setTotalLinks] = useState(0);
   const [hasMore, setHasMore] = useState(false);
   const [loadingMore, setLoadingMore] = useState(false);
+  const [brokenIds, setBrokenIds] = useState<Set<number>>(new Set());
+  const [checkingLinks, setCheckingLinks] = useState(false);
 
   const loadLinks = useCallback(
     async (offset = 0) => {
@@ -116,6 +118,17 @@ function HomePageContent() {
     loadTags();
   }
 
+  async function handleCheckLinks() {
+    setCheckingLinks(true);
+    const res = await fetch("/api/links/check", { method: "POST" });
+    const data = await res.json();
+    const broken = new Set<number>(
+      (data.results || []).filter((r: { ok: boolean }) => !r.ok).map((r: { id: number }) => r.id)
+    );
+    setBrokenIds(broken);
+    setCheckingLinks(false);
+  }
+
   async function handleLogout() {
     await fetch("/api/auth", { method: "DELETE" });
     router.push("/login");
@@ -132,6 +145,14 @@ function HomePageContent() {
         <h1 className="text-[var(--text-xl)] text-[var(--color-ink)]">Indexio</h1>
         <div className="flex items-center gap-4">
           <ShortcutsHelp />
+          <button
+            type="button"
+            onClick={handleCheckLinks}
+            disabled={checkingLinks}
+            className="text-[var(--text-sm)] text-[var(--color-ink-3)] hover:text-[var(--color-ink)] disabled:opacity-50"
+          >
+            {checkingLinks ? "Checking…" : "Check links"}
+          </button>
           <NavLink
             href="/tags"
             className="text-[var(--text-sm)] text-[var(--color-ink-3)] hover:text-[var(--color-ink)]"
@@ -183,6 +204,12 @@ function HomePageContent() {
         </div>
       )}
 
+      {brokenIds.size > 0 && (
+        <p className="mb-3 text-[var(--text-xs)] text-[var(--color-danger)]">
+          {brokenIds.size} link{brokenIds.size === 1 ? "" : "s"} unreachable — flagged below.
+        </p>
+      )}
+
       {!loading && links.length > 0 && (
         <LinkList
           links={links}
@@ -190,6 +217,7 @@ function HomePageContent() {
           hasMore={hasMore}
           loadingMore={loadingMore}
           onLoadMore={handleLoadMore}
+          brokenIds={brokenIds}
         />
       )}
     </div>
