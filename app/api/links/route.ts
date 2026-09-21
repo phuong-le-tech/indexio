@@ -6,6 +6,12 @@ import { toTsQuery } from "@/lib/search";
 const DEFAULT_LIMIT = 30;
 const MAX_LIMIT = 100;
 
+const SORT_OPTIONS = {
+  created_desc: "l.created_at DESC",
+  created_asc: "l.created_at ASC",
+  title_asc: "LOWER(COALESCE(l.title, l.url)) ASC",
+} as const;
+
 export async function GET(request: NextRequest) {
   const { searchParams } = new URL(request.url);
   const q = searchParams.get("q")?.trim() || "";
@@ -15,6 +21,9 @@ export async function GET(request: NextRequest) {
     MAX_LIMIT
   );
   const offset = Math.max(Number(searchParams.get("offset")) || 0, 0);
+  const sortParam = searchParams.get("sort") || "";
+  const orderBy =
+    SORT_OPTIONS[sortParam as keyof typeof SORT_OPTIONS] ?? SORT_OPTIONS.created_desc;
 
   const conditions: string[] = [];
   const params: unknown[] = [];
@@ -58,7 +67,7 @@ export async function GET(request: NextRequest) {
             ) AS tags
      FROM links l
      ${whereClause}
-     ORDER BY l.created_at DESC
+     ORDER BY ${orderBy}
      LIMIT $${limitIdx} OFFSET $${offsetIdx}`,
     params
   );

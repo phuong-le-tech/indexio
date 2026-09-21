@@ -30,6 +30,7 @@ function HomePageContent() {
   const [tags, setTags] = useState<Tag[]>([]);
   const [query, setQuery] = useState(searchParams.get("q") || "");
   const [activeTag, setActiveTag] = useState<string | null>(searchParams.get("tag"));
+  const [sort, setSort] = useState(searchParams.get("sort") || "created_desc");
   const [loading, setLoading] = useState(true);
   const [showSkeleton, setShowSkeleton] = useState(false);
   const [matchCount, setMatchCount] = useState(0);
@@ -42,6 +43,7 @@ function HomePageContent() {
       const params = new URLSearchParams();
       if (query) params.set("q", query);
       if (activeTag) params.set("tag", activeTag);
+      if (sort !== "created_desc") params.set("sort", sort);
       if (offset) params.set("offset", String(offset));
 
       const res = await fetch(`/api/links?${params.toString()}`);
@@ -58,7 +60,7 @@ function HomePageContent() {
       setLoading(false);
       setLoadingMore(false);
     },
-    [query, activeTag]
+    [query, activeTag, sort]
   );
 
   async function handleLoadMore() {
@@ -100,6 +102,7 @@ function HomePageContent() {
       const params = new URLSearchParams();
       if (query) params.set("q", query);
       if (activeTag) params.set("tag", activeTag);
+      if (sort !== "created_desc") params.set("sort", sort);
       const qs = params.toString();
       router.replace(qs ? `/?${qs}` : "/", { scroll: false });
       setLoading(true);
@@ -109,7 +112,7 @@ function HomePageContent() {
       if (debounceRef.current) clearTimeout(debounceRef.current);
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [query, activeTag]);
+  }, [query, activeTag, sort]);
 
   function handleChanged() {
     loadLinks();
@@ -155,6 +158,19 @@ function HomePageContent() {
           resultCount={matchCount}
         />
         <LinkForm onCreated={handleChanged} availableTags={tags.map((t) => t.name)} />
+      </div>
+
+      <div className="mb-4 flex justify-end">
+        <select
+          value={sort}
+          onChange={(e) => setSort(e.target.value)}
+          aria-label="Sort links"
+          className="rounded-[var(--radius-sm)] border border-[var(--color-hairline)] bg-[var(--color-surface)] px-2 py-1 text-[var(--text-xs)] text-[var(--color-ink-2)] outline-none focus:border-[var(--color-accent)]"
+        >
+          <option value="created_desc">Newest</option>
+          <option value="created_asc">Oldest</option>
+          <option value="title_asc">Title A–Z</option>
+        </select>
       </div>
 
       {tags.length > 0 && (
