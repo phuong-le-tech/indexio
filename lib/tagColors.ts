@@ -1,4 +1,4 @@
-const TAG_COLOR_FAMILIES = [
+export const TAG_COLOR_FAMILIES = [
   "gray",
   "brown",
   "orange",
@@ -10,7 +10,11 @@ const TAG_COLOR_FAMILIES = [
   "red",
 ] as const;
 
-type TagColorFamily = (typeof TAG_COLOR_FAMILIES)[number];
+export type TagColorFamily = (typeof TAG_COLOR_FAMILIES)[number];
+
+export function isTagColorFamily(value: string): value is TagColorFamily {
+  return (TAG_COLOR_FAMILIES as readonly string[]).includes(value);
+}
 
 export interface TagColor {
   bg: string;
@@ -61,11 +65,34 @@ function hashToFamily(name: string): TagColorFamily {
   return TAG_COLOR_FAMILIES[index];
 }
 
-export function getTagColor(name: string): TagColor {
-  const family = KNOWN_TAG_COLORS[name.trim().toLowerCase()] ?? hashToFamily(name);
+// User overrides (set via the /tags management page), keyed by lowercased
+// tag name. Populated client-side whenever tags are fetched - see
+// setTagColorOverrides(). Module-level state is fine here: this is a
+// client-only, single-user app with no SSR data to keep in sync.
+let overrides: Record<string, TagColorFamily> = {};
+
+export function setTagColorOverrides(
+  tags: { name: string; color?: string | null }[]
+): void {
+  const next: Record<string, TagColorFamily> = {};
+  for (const tag of tags) {
+    if (tag.color && isTagColorFamily(tag.color)) {
+      next[tag.name.trim().toLowerCase()] = tag.color;
+    }
+  }
+  overrides = next;
+}
+
+export function getFamilyColor(family: TagColorFamily): TagColor {
   return {
     bg: `var(--tag-${family}-bg)`,
     border: `var(--tag-${family}-border)`,
     text: `var(--tag-${family}-text)`,
   };
+}
+
+export function getTagColor(name: string): TagColor {
+  const key = name.trim().toLowerCase();
+  const family = overrides[key] ?? KNOWN_TAG_COLORS[key] ?? hashToFamily(name);
+  return getFamilyColor(family);
 }

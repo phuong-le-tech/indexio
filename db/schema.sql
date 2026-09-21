@@ -26,6 +26,11 @@ CREATE TABLE IF NOT EXISTS tags (
   name TEXT NOT NULL UNIQUE
 );
 
+-- Optional user override for a tag's color family (one of the 9 families
+-- lib/tagColors.ts defines). NULL means "use the automatic color"
+-- (Notion-carryover or name hash).
+ALTER TABLE tags ADD COLUMN IF NOT EXISTS color TEXT;
+
 CREATE TABLE IF NOT EXISTS link_tags (
   link_id INTEGER NOT NULL REFERENCES links(id) ON DELETE CASCADE,
   tag_id INTEGER NOT NULL REFERENCES tags(id) ON DELETE CASCADE,

@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useEffect, useState } from "react";
-import { getTagColor } from "@/lib/tagColors";
+import { TAG_COLOR_FAMILIES, getFamilyColor, getTagColor, setTagColorOverrides } from "@/lib/tagColors";
 import type { Tag } from "@/lib/types";
 
 const CONFIRM_TIMEOUT_MS = 3000;
@@ -14,7 +14,9 @@ export default function TagsPage() {
   async function loadTags() {
     const res = await fetch("/api/tags");
     const data = await res.json();
-    setTags(data.tags || []);
+    const fetched: Tag[] = data.tags || [];
+    setTags(fetched);
+    setTagColorOverrides(fetched);
     setLoading(false);
   }
 
@@ -62,6 +64,7 @@ function TagRow({ tag, allTags, onChanged }: TagRowProps) {
   const [deleteArmed, setDeleteArmed] = useState(false);
   const [mergeTarget, setMergeTarget] = useState("");
   const [mergeArmed, setMergeArmed] = useState(false);
+  const [colorPickerOpen, setColorPickerOpen] = useState(false);
 
   async function handleRename() {
     const trimmed = name.trim();
@@ -108,15 +111,53 @@ function TagRow({ tag, allTags, onChanged }: TagRowProps) {
     }).then(onChanged);
   }
 
+  function handlePickColor(family: string) {
+    const nextColor = tag.color === family ? null : family;
+    fetch(`/api/tags/${tag.id}`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ color: nextColor }),
+    }).then(onChanged);
+    setColorPickerOpen(false);
+  }
+
   const otherTags = allTags.filter((t) => t.id !== tag.id);
 
   return (
     <li className="flex flex-wrap items-center gap-3 rounded-[var(--radius-md)] border border-[var(--color-hairline)] bg-[var(--color-surface)] px-4 py-3">
-      <span
-        className="h-2 w-2 shrink-0 rounded-full"
-        style={{ background: color.text }}
-        aria-hidden="true"
-      />
+      <div className="relative">
+        <button
+          type="button"
+          onClick={() => setColorPickerOpen((prev) => !prev)}
+          aria-label="Change tag color"
+          className="flex h-4 w-4 items-center justify-center rounded-full hover:ring-2 hover:ring-[var(--color-hairline)]"
+        >
+          <span
+            className="h-2 w-2 rounded-full"
+            style={{ background: color.text }}
+            aria-hidden="true"
+          />
+        </button>
+        {colorPickerOpen && (
+          <div className="absolute top-full left-0 z-10 mt-1 flex gap-1 rounded-[var(--radius-sm)] border border-[var(--color-hairline)] bg-[var(--color-surface)] p-1.5 shadow-[0_4px_16px_rgba(0,0,0,0.12)]">
+            {TAG_COLOR_FAMILIES.map((family) => {
+              const swatch = getFamilyColor(family);
+              const isActive = tag.color === family;
+              return (
+                <button
+                  key={family}
+                  type="button"
+                  onClick={() => handlePickColor(family)}
+                  aria-label={family}
+                  title={family}
+                  className={`h-4 w-4 rounded-full ${isActive ? "ring-2 ring-[var(--color-accent)] ring-offset-1 ring-offset-[var(--color-surface)]" : ""}`}
+                  style={{ background: swatch.text }}
+                />
+              );
+            })}
+          </div>
+        )}
+      </div>
 
       {editing ? (
         <input
