@@ -197,7 +197,8 @@ function HomePageContent() {
   const isNoResults = !loading && links.length === 0 && hasFilter;
 
   return (
-    <div className="mx-auto w-full max-w-[var(--container-col)] px-5 py-12">
+    <div className="mx-auto w-full max-w-[var(--container-wide)] px-5 py-12">
+      <div className="mx-auto w-full max-w-[var(--container-col)]">
       <div className="mb-6 flex items-center justify-between">
         <h1 className="text-[var(--text-xl)] text-[var(--color-ink)]">Indexio</h1>
         <div className="flex items-center gap-4">
@@ -300,6 +301,7 @@ function HomePageContent() {
           <TagFilter tags={tags} activeTag={activeTag} onSelect={setActiveTag} totalCount={totalLinks} />
         </div>
       )}
+      </div>
 
       {loading && showSkeleton && <LinkListSkeleton />}
 
