@@ -132,6 +132,13 @@ function HomePageContent() {
         <h1 className="text-[var(--text-xl)] text-[var(--color-ink)]">Indexio</h1>
         <div className="flex items-center gap-4">
           <ShortcutsHelp />
+          {/* eslint-disable-next-line @next/next/no-html-link-for-pages -- file download from an API route, not a page; next/link would intercept it */}
+          <a
+            href="/api/links/export"
+            className="text-[var(--text-sm)] text-[var(--color-ink-3)] hover:text-[var(--color-ink)]"
+          >
+            Export
+          </a>
           <NavLink
             href="/tags"
             className="text-[var(--text-sm)] text-[var(--color-ink-3)] hover:text-[var(--color-ink)]"
