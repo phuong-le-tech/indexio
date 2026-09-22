@@ -15,6 +15,7 @@ interface LinkListProps {
   selectionMode?: boolean;
   selectedIds?: Set<number>;
   onToggleSelect?: (id: number) => void;
+  brokenIds?: Set<number>;
 }
 
 export function LinkList({
@@ -26,6 +27,7 @@ export function LinkList({
   selectionMode,
   selectedIds,
   onToggleSelect,
+  brokenIds,
 }: LinkListProps) {
   const [deletingIds, setDeletingIds] = useState<Set<number>>(new Set());
   const [editingId, setEditingId] = useState<number | null>(null);
@@ -62,6 +64,8 @@ export function LinkList({
           selectionMode={Boolean(selectionMode)}
           selected={selectedIds?.has(link.id) ?? false}
           onToggleSelect={() => onToggleSelect?.(link.id)}
+          editing={editingId === link.id}
+          broken={brokenIds?.has(link.id) ?? false}
           onEdit={() => setEditingId(link.id)}
           onCancelEdit={() => setEditingId(null)}
           onSaved={() => {
@@ -94,6 +98,7 @@ interface LinkCardProps {
   selectionMode: boolean;
   selected: boolean;
   onToggleSelect: () => void;
+  broken: boolean;
   onEdit: () => void;
   onCancelEdit: () => void;
   onSaved: () => void;
@@ -112,8 +117,10 @@ function LinkCard({
   onSaved,
   onDelete,
 }: LinkCardProps) {
+function LinkCard({ link, deleting, editing, broken, onEdit, onCancelEdit, onSaved, onDelete }: LinkCardProps) {
   const host = hostname(link.url);
   const displayTitle = link.title || `${host}${new URL(link.url).pathname}`;
+  const [faviconFailed, setFaviconFailed] = useState(false);
 
   return (
     <li
@@ -171,8 +178,17 @@ function LinkCard({
             </svg>
           )
         ) : link.favicon_url ? (
+      <div className="pointer-events-none relative z-[1] flex h-5 w-5 shrink-0 items-center justify-center rounded-[var(--radius-sm)] border border-[var(--color-hairline)] bg-[var(--color-inset)]">
+        {link.favicon_url && !faviconFailed ? (
           // eslint-disable-next-line @next/next/no-img-element
-          <img src={link.favicon_url} alt="" width={12} height={12} className="rounded-[2px]" />
+          <img
+            src={link.favicon_url}
+            alt=""
+            width={12}
+            height={12}
+            className="rounded-[2px]"
+            onError={() => setFaviconFailed(true)}
+          />
         ) : (
           <LinkIcon size={11} className="text-[var(--color-ink-3)]" />
         )}
@@ -189,10 +205,15 @@ function LinkCard({
           {displayTitle}
         </p>
 
-        <p className="mt-1 flex items-center gap-2 font-mono text-[var(--text-xs)] text-[var(--color-ink-3)]">
-          <span>{host}</span>
+        <p className="mt-1 flex flex-wrap items-center gap-x-2 gap-y-1 font-mono text-[var(--text-xs)] text-[var(--color-ink-3)]">
+          <span className="min-w-0 truncate">{host}</span>
           <span aria-hidden="true">·</span>
-          <span>{relativeTime(link.created_at)}</span>
+          <span className="shrink-0">{relativeTime(link.created_at)}</span>
+          {broken && (
+            <span className="shrink-0 rounded-[var(--radius-sm)] bg-[var(--color-danger-bg)] px-1.5 py-0.5 text-[var(--text-2xs)] text-[var(--color-danger)]">
+              unreachable
+            </span>
+          )}
         </p>
 
         {link.description && (

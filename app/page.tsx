@@ -30,6 +30,7 @@ function HomePageContent() {
   const [tags, setTags] = useState<Tag[]>([]);
   const [query, setQuery] = useState(searchParams.get("q") || "");
   const [activeTag, setActiveTag] = useState<string | null>(searchParams.get("tag"));
+  const [sort, setSort] = useState(searchParams.get("sort") || "created_desc");
   const [loading, setLoading] = useState(true);
   const [showSkeleton, setShowSkeleton] = useState(false);
   const [matchCount, setMatchCount] = useState(0);
@@ -41,12 +42,15 @@ function HomePageContent() {
   const [bulkTagInput, setBulkTagInput] = useState("");
   const [bulkDeleteArmed, setBulkDeleteArmed] = useState(false);
   const [bulkBusy, setBulkBusy] = useState(false);
+  const [brokenIds, setBrokenIds] = useState<Set<number>>(new Set());
+  const [checkingLinks, setCheckingLinks] = useState(false);
 
   const loadLinks = useCallback(
     async (offset = 0) => {
       const params = new URLSearchParams();
       if (query) params.set("q", query);
       if (activeTag) params.set("tag", activeTag);
+      if (sort !== "created_desc") params.set("sort", sort);
       if (offset) params.set("offset", String(offset));
 
       const res = await fetch(`/api/links?${params.toString()}`);
@@ -63,7 +67,7 @@ function HomePageContent() {
       setLoading(false);
       setLoadingMore(false);
     },
-    [query, activeTag]
+    [query, activeTag, sort]
   );
 
   async function handleLoadMore() {
@@ -105,6 +109,7 @@ function HomePageContent() {
       const params = new URLSearchParams();
       if (query) params.set("q", query);
       if (activeTag) params.set("tag", activeTag);
+      if (sort !== "created_desc") params.set("sort", sort);
       const qs = params.toString();
       router.replace(qs ? `/?${qs}` : "/", { scroll: false });
       setLoading(true);
@@ -114,7 +119,7 @@ function HomePageContent() {
       if (debounceRef.current) clearTimeout(debounceRef.current);
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [query, activeTag]);
+  }, [query, activeTag, sort]);
 
   function handleChanged() {
     loadLinks();
@@ -170,6 +175,15 @@ function HomePageContent() {
     setBulkBusy(false);
     setBulkTagInput("");
     handleChanged();
+  async function handleCheckLinks() {
+    setCheckingLinks(true);
+    const res = await fetch("/api/links/check", { method: "POST" });
+    const data = await res.json();
+    const broken = new Set<number>(
+      (data.results || []).filter((r: { ok: boolean }) => !r.ok).map((r: { id: number }) => r.id)
+    );
+    setBrokenIds(broken);
+    setCheckingLinks(false);
   }
 
   async function handleLogout() {
@@ -195,6 +209,19 @@ function HomePageContent() {
           >
             {selectionMode ? "Cancel" : "Select"}
           </button>
+            onClick={handleCheckLinks}
+            disabled={checkingLinks}
+            className="text-[var(--text-sm)] text-[var(--color-ink-3)] hover:text-[var(--color-ink)] disabled:opacity-50"
+          >
+            {checkingLinks ? "Checking…" : "Check links"}
+          </button>
+          {/* eslint-disable-next-line @next/next/no-html-link-for-pages -- file download from an API route, not a page; next/link would intercept it */}
+          <a
+            href="/api/links/export"
+            className="text-[var(--text-sm)] text-[var(--color-ink-3)] hover:text-[var(--color-ink)]"
+          >
+            Export
+          </a>
           <NavLink
             href="/tags"
             className="text-[var(--text-sm)] text-[var(--color-ink-3)] hover:text-[var(--color-ink)]"
@@ -255,6 +282,18 @@ function HomePageContent() {
           </button>
         </div>
       )}
+      <div className="mb-4 flex justify-end">
+        <select
+          value={sort}
+          onChange={(e) => setSort(e.target.value)}
+          aria-label="Sort links"
+          className="rounded-[var(--radius-sm)] border border-[var(--color-hairline)] bg-[var(--color-surface)] px-2 py-1 text-[var(--text-xs)] text-[var(--color-ink-2)] outline-none focus:border-[var(--color-accent)]"
+        >
+          <option value="created_desc">Newest</option>
+          <option value="created_asc">Oldest</option>
+          <option value="title_asc">Title A–Z</option>
+        </select>
+      </div>
 
       {tags.length > 0 && (
         <div className="mb-4">
@@ -282,6 +321,12 @@ function HomePageContent() {
         </div>
       )}
 
+      {brokenIds.size > 0 && (
+        <p className="mb-3 text-[var(--text-xs)] text-[var(--color-danger)]">
+          {brokenIds.size} link{brokenIds.size === 1 ? "" : "s"} unreachable — flagged below.
+        </p>
+      )}
+
       {!loading && links.length > 0 && (
         <LinkList
           links={links}
@@ -292,6 +337,7 @@ function HomePageContent() {
           selectionMode={selectionMode}
           selectedIds={selectedIds}
           onToggleSelect={toggleSelect}
+          brokenIds={brokenIds}
         />
       )}
     </div>
