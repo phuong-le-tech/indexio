@@ -54,27 +54,6 @@ export function LinkList({
   }
 
   return (
-    <ul className="flex flex-col gap-4">
-      {links.map((link) => (
-        <LinkCard
-          key={link.id}
-          link={link}
-          deleting={deletingIds.has(link.id)}
-          editing={!selectionMode && editingId === link.id}
-          selectionMode={Boolean(selectionMode)}
-          selected={selectedIds?.has(link.id) ?? false}
-          onToggleSelect={() => onToggleSelect?.(link.id)}
-          editing={editingId === link.id}
-          broken={brokenIds?.has(link.id) ?? false}
-          onEdit={() => setEditingId(link.id)}
-          onCancelEdit={() => setEditingId(null)}
-          onSaved={() => {
-            setEditingId(null);
-            onDeleted();
-          }}
-          onDelete={() => handleDelete(link.id)}
-        />
-      ))}
     <>
       <ul className="grid grid-cols-1 items-stretch gap-4 sm:grid-cols-2 xl:grid-cols-3">
         {links.map((link) => (
@@ -82,7 +61,10 @@ export function LinkList({
             key={link.id}
             link={link}
             deleting={deletingIds.has(link.id)}
-            editing={editingId === link.id}
+            editing={!selectionMode && editingId === link.id}
+            selectionMode={Boolean(selectionMode)}
+            selected={selectedIds?.has(link.id) ?? false}
+            onToggleSelect={() => onToggleSelect?.(link.id)}
             broken={brokenIds?.has(link.id) ?? false}
             onEdit={() => setEditingId(link.id)}
             onCancelEdit={() => setEditingId(null)}
@@ -131,12 +113,12 @@ function LinkCard({
   selectionMode,
   selected,
   onToggleSelect,
+  broken,
   onEdit,
   onCancelEdit,
   onSaved,
   onDelete,
 }: LinkCardProps) {
-function LinkCard({ link, deleting, editing, broken, onEdit, onCancelEdit, onSaved, onDelete }: LinkCardProps) {
   const host = hostname(link.url);
   const displayTitle = link.title || `${host}${new URL(link.url).pathname}`;
   const [faviconFailed, setFaviconFailed] = useState(false);
@@ -144,11 +126,11 @@ function LinkCard({ link, deleting, editing, broken, onEdit, onCancelEdit, onSav
   return (
     <li
       className={`group relative flex gap-4 rounded-[var(--radius-lg)] border p-5 transition-all duration-150 ${
+        editing ? "h-auto" : "h-60 overflow-hidden"
+      } ${
         selected
           ? "border-[var(--color-accent)] bg-[var(--color-accent-bg)]"
           : "border-[var(--color-hairline)] bg-[var(--color-surface)]"
-      className={`group relative flex gap-4 rounded-[var(--radius-lg)] border border-[var(--color-hairline)] bg-[var(--color-surface)] p-5 transition-all duration-150 ${
-        editing ? "h-auto" : "h-60 overflow-hidden"
       } ${
         deleting
           ? "scale-[0.98] opacity-40"
@@ -198,9 +180,7 @@ function LinkCard({ link, deleting, editing, broken, onEdit, onCancelEdit, onSav
               <path d="M20 6 9 17l-5-5" />
             </svg>
           )
-        ) : link.favicon_url ? (
-      <div className="pointer-events-none relative z-[1] flex h-5 w-5 shrink-0 items-center justify-center rounded-[var(--radius-sm)] border border-[var(--color-hairline)] bg-[var(--color-inset)]">
-        {link.favicon_url && !faviconFailed ? (
+        ) : link.favicon_url && !faviconFailed ? (
           // eslint-disable-next-line @next/next/no-img-element
           <img
             src={link.favicon_url}

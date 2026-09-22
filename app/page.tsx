@@ -175,6 +175,8 @@ function HomePageContent() {
     setBulkBusy(false);
     setBulkTagInput("");
     handleChanged();
+  }
+
   async function handleCheckLinks() {
     setCheckingLinks(true);
     const res = await fetch("/api/links/check", { method: "POST" });
@@ -210,6 +212,8 @@ function HomePageContent() {
           >
             {selectionMode ? "Cancel" : "Select"}
           </button>
+          <button
+            type="button"
             onClick={handleCheckLinks}
             disabled={checkingLinks}
             className="text-[var(--text-sm)] text-[var(--color-ink-3)] hover:text-[var(--color-ink)] disabled:opacity-50"
