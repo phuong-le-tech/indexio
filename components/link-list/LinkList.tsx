@@ -48,25 +48,27 @@ export function LinkList({
   }
 
   return (
-    <ul className="flex flex-col gap-4">
-      {links.map((link) => (
-        <LinkCard
-          key={link.id}
-          link={link}
-          deleting={deletingIds.has(link.id)}
-          editing={editingId === link.id}
-          broken={brokenIds?.has(link.id) ?? false}
-          onEdit={() => setEditingId(link.id)}
-          onCancelEdit={() => setEditingId(null)}
-          onSaved={() => {
-            setEditingId(null);
-            onDeleted();
-          }}
-          onDelete={() => handleDelete(link.id)}
-        />
-      ))}
+    <>
+      <ul className="columns-1 gap-4 sm:columns-2 xl:columns-3">
+        {links.map((link) => (
+          <LinkCard
+            key={link.id}
+            link={link}
+            deleting={deletingIds.has(link.id)}
+            editing={editingId === link.id}
+            broken={brokenIds?.has(link.id) ?? false}
+            onEdit={() => setEditingId(link.id)}
+            onCancelEdit={() => setEditingId(null)}
+            onSaved={() => {
+              setEditingId(null);
+              onDeleted();
+            }}
+            onDelete={() => handleDelete(link.id)}
+          />
+        ))}
+      </ul>
       {hasMore && (
-        <li className="flex justify-center">
+        <div className="mt-4 flex justify-center">
           <button
             type="button"
             onClick={onLoadMore}
@@ -75,9 +77,9 @@ export function LinkList({
           >
             {loadingMore ? "Loading…" : "Load more"}
           </button>
-        </li>
+        </div>
       )}
-    </ul>
+    </>
   );
 }
 
@@ -99,7 +101,7 @@ function LinkCard({ link, deleting, editing, broken, onEdit, onCancelEdit, onSav
 
   return (
     <li
-      className={`group relative flex gap-4 rounded-[var(--radius-lg)] border border-[var(--color-hairline)] bg-[var(--color-surface)] p-5 transition-all duration-150 ${
+      className={`group relative mb-4 flex break-inside-avoid gap-4 rounded-[var(--radius-lg)] border border-[var(--color-hairline)] bg-[var(--color-surface)] p-5 transition-all duration-150 ${
         deleting
           ? "scale-[0.98] opacity-40"
           : "hover:border-[var(--color-line)] hover:bg-[var(--color-surface-hover)] focus-within:border-[var(--color-accent)] focus-within:ring-[3px] focus-within:ring-[var(--color-accent)]/20"

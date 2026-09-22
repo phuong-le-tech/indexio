@@ -37,6 +37,7 @@
   --radius-lg: 14px;
   --radius-full: 999px;
   --container-col: 42.5rem;
+  --container-wide: 74rem;
   --ease-out-quint: cubic-bezier(0.16, 1, 0.3, 1);
 
   --tag-gray-bg: #f1f1ee;
