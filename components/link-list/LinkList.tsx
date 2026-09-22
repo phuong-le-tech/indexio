@@ -95,6 +95,7 @@ interface LinkCardProps {
 function LinkCard({ link, deleting, editing, broken, onEdit, onCancelEdit, onSaved, onDelete }: LinkCardProps) {
   const host = hostname(link.url);
   const displayTitle = link.title || `${host}${new URL(link.url).pathname}`;
+  const [faviconFailed, setFaviconFailed] = useState(false);
 
   return (
     <li
@@ -113,9 +114,16 @@ function LinkCard({ link, deleting, editing, broken, onEdit, onCancelEdit, onSav
       />
 
       <div className="pointer-events-none relative z-[1] flex h-5 w-5 shrink-0 items-center justify-center rounded-[var(--radius-sm)] border border-[var(--color-hairline)] bg-[var(--color-inset)]">
-        {link.favicon_url ? (
+        {link.favicon_url && !faviconFailed ? (
           // eslint-disable-next-line @next/next/no-img-element
-          <img src={link.favicon_url} alt="" width={12} height={12} className="rounded-[2px]" />
+          <img
+            src={link.favicon_url}
+            alt=""
+            width={12}
+            height={12}
+            className="rounded-[2px]"
+            onError={() => setFaviconFailed(true)}
+          />
         ) : (
           <LinkIcon size={11} className="text-[var(--color-ink-3)]" />
         )}
