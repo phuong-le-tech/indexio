@@ -44,6 +44,9 @@ function HomePageContent() {
   const [bulkBusy, setBulkBusy] = useState(false);
   const [brokenIds, setBrokenIds] = useState<Set<number>>(new Set());
   const [checkingLinks, setCheckingLinks] = useState(false);
+  const [importing, setImporting] = useState(false);
+  const [importMessage, setImportMessage] = useState<string | null>(null);
+  const importInputRef = useRef<HTMLInputElement | null>(null);
 
   const loadLinks = useCallback(
     async (offset = 0) => {
@@ -188,6 +191,36 @@ function HomePageContent() {
     setCheckingLinks(false);
   }
 
+  async function handleImportFile(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0];
+    e.target.value = "";
+    if (!file) return;
+
+    const format = file.name.toLowerCase().endsWith(".csv") ? "csv" : "json";
+    const content = await file.text();
+
+    setImporting(true);
+    setImportMessage(null);
+    const res = await fetch("/api/links/import", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ format, content }),
+    });
+    const data = await res.json();
+    setImporting(false);
+
+    if (!res.ok) {
+      setImportMessage(data.error || "Import failed");
+      return;
+    }
+
+    setImportMessage(
+      `Imported ${data.imported} link${data.imported === 1 ? "" : "s"}${data.skipped ? `, skipped ${data.skipped}` : ""}`
+    );
+    handleChanged();
+    setTimeout(() => setImportMessage(null), 5000);
+  }
+
   async function handleLogout() {
     await fetch("/api/auth", { method: "DELETE" });
     router.push("/login");
@@ -227,6 +260,21 @@ function HomePageContent() {
           >
             Export
           </a>
+          <input
+            ref={importInputRef}
+            type="file"
+            accept=".json,.csv,application/json,text/csv"
+            onChange={handleImportFile}
+            className="hidden"
+          />
+          <button
+            type="button"
+            onClick={() => importInputRef.current?.click()}
+            disabled={importing}
+            className="text-[var(--text-sm)] text-[var(--color-ink-3)] hover:text-[var(--color-ink)] disabled:opacity-50"
+          >
+            {importing ? "Importing…" : "Import"}
+          </button>
           <NavLink
             href="/tags"
             className="text-[var(--text-sm)] text-[var(--color-ink-3)] hover:text-[var(--color-ink)]"
@@ -325,6 +373,10 @@ function HomePageContent() {
             Try a different search or clear the active tag.
           </p>
         </div>
+      )}
+
+      {importMessage && (
+        <p className="mb-3 text-[var(--text-xs)] text-[var(--color-ink-2)]">{importMessage}</p>
       )}
 
       {brokenIds.size > 0 && (
