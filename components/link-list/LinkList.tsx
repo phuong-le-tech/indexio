@@ -48,25 +48,27 @@ export function LinkList({
   }
 
   return (
-    <ul className="flex flex-col gap-4">
-      {links.map((link) => (
-        <LinkCard
-          key={link.id}
-          link={link}
-          deleting={deletingIds.has(link.id)}
-          editing={editingId === link.id}
-          broken={brokenIds?.has(link.id) ?? false}
-          onEdit={() => setEditingId(link.id)}
-          onCancelEdit={() => setEditingId(null)}
-          onSaved={() => {
-            setEditingId(null);
-            onDeleted();
-          }}
-          onDelete={() => handleDelete(link.id)}
-        />
-      ))}
+    <>
+      <ul className="grid grid-cols-1 items-stretch gap-4 sm:grid-cols-2 xl:grid-cols-3">
+        {links.map((link) => (
+          <LinkCard
+            key={link.id}
+            link={link}
+            deleting={deletingIds.has(link.id)}
+            editing={editingId === link.id}
+            broken={brokenIds?.has(link.id) ?? false}
+            onEdit={() => setEditingId(link.id)}
+            onCancelEdit={() => setEditingId(null)}
+            onSaved={() => {
+              setEditingId(null);
+              onDeleted();
+            }}
+            onDelete={() => handleDelete(link.id)}
+          />
+        ))}
+      </ul>
       {hasMore && (
-        <li className="flex justify-center">
+        <div className="mt-4 flex justify-center">
           <button
             type="button"
             onClick={onLoadMore}
@@ -75,9 +77,9 @@ export function LinkList({
           >
             {loadingMore ? "Loading…" : "Load more"}
           </button>
-        </li>
+        </div>
       )}
-    </ul>
+    </>
   );
 }
 
@@ -100,6 +102,8 @@ function LinkCard({ link, deleting, editing, broken, onEdit, onCancelEdit, onSav
   return (
     <li
       className={`group relative flex gap-4 rounded-[var(--radius-lg)] border border-[var(--color-hairline)] bg-[var(--color-surface)] p-5 transition-all duration-150 ${
+        editing ? "h-auto" : "h-60 overflow-hidden"
+      } ${
         deleting
           ? "scale-[0.98] opacity-40"
           : "hover:border-[var(--color-line)] hover:bg-[var(--color-surface-hover)] focus-within:border-[var(--color-accent)] focus-within:ring-[3px] focus-within:ring-[var(--color-accent)]/20"
@@ -129,9 +133,9 @@ function LinkCard({ link, deleting, editing, broken, onEdit, onCancelEdit, onSav
         )}
       </div>
 
-      <div className="pointer-events-none relative z-[1] min-w-0 flex-1">
+      <div className="pointer-events-none relative z-[1] flex min-w-0 flex-1 flex-col">
         <p
-          className={`leading-snug break-words ${
+          className={`line-clamp-2 leading-snug break-words ${
             link.title
               ? "text-[var(--text-lg)] font-semibold text-[var(--color-ink)]"
               : "font-mono text-[var(--text-base)] text-[var(--color-ink)]"
@@ -158,7 +162,7 @@ function LinkCard({ link, deleting, editing, broken, onEdit, onCancelEdit, onSav
         )}
 
         {link.notes && !editing && (
-          <p className="mt-2 border-l-2 border-[var(--color-accent-line)] py-0.5 pl-3 text-[var(--text-sm)] leading-relaxed text-[var(--color-ink-2)]">
+          <p className="mt-2 line-clamp-2 border-l-2 border-[var(--color-accent-line)] py-0.5 pl-3 text-[var(--text-sm)] leading-relaxed text-[var(--color-ink-2)]">
             {link.notes}
           </p>
         )}
@@ -167,7 +171,7 @@ function LinkCard({ link, deleting, editing, broken, onEdit, onCancelEdit, onSav
           <EditFields link={link} onSaved={onSaved} onCancel={onCancelEdit} />
         ) : (
           link.tags.length > 0 && (
-            <div className="mt-3 flex flex-wrap gap-1.5">
+            <div className="mt-3 flex flex-wrap gap-1.5 overflow-hidden">
               {link.tags.map((tag) => {
                 const color = getTagColor(tag);
                 return (
