@@ -66,11 +66,10 @@ export function BulkBar({
           </Button>
         </form>
         <Button
-          variant="danger"
+          variant={deleteArmed ? "dangerSolid" : "danger"}
           size="sm"
           onClick={onDelete}
           disabled={nothingSelected || busy}
-          className={deleteArmed ? "bg-[var(--color-danger)] text-[var(--color-inverse)]" : ""}
         >
           {deleteArmed ? "Confirm?" : "Delete"}
         </Button>

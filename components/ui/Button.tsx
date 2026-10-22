@@ -2,7 +2,8 @@
 
 import { FOCUS_RING } from "@/components/ui/styles";
 
-export type ButtonVariant = "primary" | "secondary" | "ghost" | "danger";
+// "dangerSolid" is the armed state of a two-step destructive action.
+export type ButtonVariant = "primary" | "secondary" | "ghost" | "danger" | "dangerSolid";
 export type ButtonSize = "sm" | "md";
 
 const BASE =
@@ -17,6 +18,8 @@ const VARIANTS: Record<ButtonVariant, string> = {
     "text-[var(--color-ink-2)] hover:bg-[var(--color-surface-hover)] hover:text-[var(--color-ink)]",
   danger:
     "bg-[var(--color-danger-bg)] text-[var(--color-danger)] hover:bg-[var(--color-danger)] hover:text-[var(--color-inverse)]",
+  dangerSolid:
+    "bg-[var(--color-danger)] text-[var(--color-inverse)] shadow-sm hover:opacity-90",
 };
 
 const SIZES: Record<ButtonSize, string> = {
