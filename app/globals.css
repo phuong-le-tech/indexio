@@ -14,10 +14,10 @@
   --color-line-strong: #c9c9c1;
   --color-ink: #16161a;
   --color-ink-2: #5a5a62;
-  --color-ink-3: #8a8a92;
+  --color-ink-3: #6c6c74;
   --color-inverse: #ffffff;
   --color-accent: #a8500b;
-  --color-accent-solid: #c25f10;
+  --color-accent-solid: #b0540c;
   --color-accent-hover: #8f4309;
   --color-accent-bg: #f6ebe0;
   --color-accent-line: #e3c9ae;
@@ -39,6 +39,38 @@
   --container-col: 42.5rem;
   --container-wide: 74rem;
   --ease-out-quint: cubic-bezier(0.16, 1, 0.3, 1);
+
+  --color-surface-raised: #ffffff;
+  --color-focus: rgb(176 84 12 / 0.35);
+  --color-scrim: rgb(22 22 26 / 0.45);
+  --shadow-sm: 0 1px 2px rgb(22 22 26 / 0.06);
+  --shadow-md: 0 4px 12px -2px rgb(22 22 26 / 0.1), 0 2px 4px -2px rgb(22 22 26 / 0.06);
+  --shadow-lg: 0 16px 40px -8px rgb(22 22 26 / 0.18), 0 4px 12px -4px rgb(22 22 26 / 0.08);
+
+  --animate-pop-in: pop-in 160ms var(--ease-out-quint);
+  --animate-toast-in: toast-in 220ms var(--ease-out-quint);
+
+  @keyframes pop-in {
+    from {
+      opacity: 0;
+      transform: translateY(-4px) scale(0.98);
+    }
+    to {
+      opacity: 1;
+      transform: none;
+    }
+  }
+
+  @keyframes toast-in {
+    from {
+      opacity: 0;
+      transform: translateY(-8px);
+    }
+    to {
+      opacity: 1;
+      transform: none;
+    }
+  }
 
   --tag-gray-bg: #f1f1ee;
   --tag-gray-border: #dcdcd6;
@@ -81,7 +113,7 @@
     --color-line-strong: #3a3a41;
     --color-ink: #f3f3f0;
     --color-ink-2: #9c9ca4;
-    --color-ink-3: #6b6b74;
+    --color-ink-3: #8b8b94;
     --color-inverse: #0c0c0d;
     --color-accent: #f2a25c;
     --color-accent-solid: #f2a25c;
@@ -90,6 +122,13 @@
     --color-accent-line: #4a3520;
     --color-danger: #f08085;
     --color-danger-bg: #2c1517;
+
+    --color-surface-raised: #1d1d20;
+    --color-focus: rgb(242 162 92 / 0.4);
+    --color-scrim: rgb(0 0 0 / 0.6);
+    --shadow-sm: 0 1px 2px rgb(0 0 0 / 0.4);
+    --shadow-md: 0 4px 12px -2px rgb(0 0 0 / 0.5), 0 2px 4px -2px rgb(0 0 0 / 0.4);
+    --shadow-lg: 0 16px 40px -8px rgb(0 0 0 / 0.7), 0 4px 12px -4px rgb(0 0 0 / 0.5);
 
     --tag-gray-bg: #232326;
     --tag-gray-border: #3a3a3e;
