@@ -171,3 +171,11 @@ export function InboxIcon(props: IconProps) {
     </Svg>
   );
 }
+
+export function SpinnerIcon({ className = "", ...props }: IconProps) {
+  return (
+    <Svg {...props} className={`animate-spin ${className}`}>
+      <path d="M21 12a9 9 0 1 1-6.219-8.56" />
+    </Svg>
+  );
+}

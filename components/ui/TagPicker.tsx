@@ -76,7 +76,7 @@ export function TagPicker({ availableTags, selected, onChange }: TagPickerProps)
 
   return (
     <div className="relative">
-      <div className="flex w-full flex-wrap items-center gap-1.5 rounded-[var(--radius-sm)] border border-[var(--color-hairline)] bg-[var(--color-surface)] px-2 py-1.5 focus-within:border-[var(--color-accent)] focus-within:ring-[3px] focus-within:ring-[var(--color-accent)]/20">
+      <div className="flex w-full flex-wrap items-center gap-1.5 rounded-[var(--radius-sm)] border border-[var(--color-hairline)] bg-[var(--color-surface)] px-2 py-1.5 focus-within:border-[var(--color-accent)] focus-within:ring-[3px] focus-within:ring-[var(--color-focus)]">
         {selected.map((tag) => {
           const color = getTagColor(tag);
           return (
@@ -115,7 +115,7 @@ export function TagPicker({ availableTags, selected, onChange }: TagPickerProps)
       </div>
 
       {open && suggestions.length > 0 && (
-        <ul className="absolute top-full left-0 z-10 mt-1 max-h-40 w-full min-w-[10rem] overflow-y-auto rounded-[var(--radius-sm)] border border-[var(--color-hairline)] bg-[var(--color-surface)] py-1 shadow-[0_4px_16px_rgba(0,0,0,0.12)]">
+        <ul className="absolute top-full left-0 z-10 mt-1 max-h-40 w-full min-w-[10rem] overflow-y-auto rounded-[var(--radius-sm)] border border-[var(--color-hairline)] bg-[var(--color-surface-raised)] py-1 shadow-md">
           {suggestions.map((tag, i) => {
             const color = getTagColor(tag);
             return (
