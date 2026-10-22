@@ -10,24 +10,35 @@ const CONFIRM_TIMEOUT_MS = 3000;
 export default function TagsPage() {
   const [tags, setTags] = useState<Tag[]>([]);
   const [loading, setLoading] = useState(true);
+  const [loadFailed, setLoadFailed] = useState(false);
 
   async function loadTags() {
-    const res = await fetch("/api/tags");
-    const data = await res.json();
-    const fetched: Tag[] = data.tags || [];
-    setTags(fetched);
-    setTagColorOverrides(fetched);
-    setLoading(false);
+    try {
+      const res = await fetch("/api/tags");
+      if (!res.ok) throw new Error(`GET /api/tags failed with ${res.status}`);
+      const data = await res.json();
+      const fetched: Tag[] = data.tags || [];
+      setTags(fetched);
+      setTagColorOverrides(fetched);
+      setLoadFailed(false);
+    } catch {
+      setLoadFailed(true);
+    } finally {
+      setLoading(false);
+    }
   }
 
   useEffect(() => {
     // eslint-disable-next-line react-hooks/set-state-in-effect -- data fetch on mount
-    loadTags();
+    void loadTags();
   }, []);
 
   function renderTagList() {
     if (loading) {
       return <p className="text-[var(--text-sm)] text-[var(--color-ink-3)]">Loading…</p>;
+    }
+    if (loadFailed) {
+      return <p className="text-[var(--text-sm)] text-[var(--color-danger)]">Could not load tags.</p>;
     }
     if (tags.length === 0) {
       return (
@@ -88,52 +99,80 @@ function TagRow({ tag, allTags, onChanged }: TagRowProps) {
       setName(tag.name);
       return;
     }
-    const res = await fetch(`/api/tags/${tag.id}`, {
-      method: "PATCH",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ name: trimmed }),
-    });
-    if (!res.ok) {
-      const body = await res.json().catch(() => ({}));
-      setError(body.error || "Failed to rename tag");
-      return;
-    }
+    const ok = await sendTagRequest(
+      `/api/tags/${tag.id}`,
+      {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ name: trimmed }),
+      },
+      "Failed to rename tag",
+    );
+    if (!ok) return;
     setEditing(false);
-    setError(null);
     onChanged();
   }
 
-  function handleDeleteClick() {
+  // Resolves to false (and shows the row error) instead of rejecting, so callers never leak a rejection.
+  async function sendTagRequest(url: string, init: RequestInit, fallbackError: string): Promise<boolean> {
+    try {
+      const res = await fetch(url, init);
+      if (res.ok) {
+        setError(null);
+        return true;
+      }
+      const body = await res.json().catch(() => ({}));
+      setError(body.error || fallbackError);
+    } catch {
+      setError(fallbackError);
+    }
+    return false;
+  }
+
+  async function handleDeleteClick() {
     if (!deleteArmed) {
       setDeleteArmed(true);
       setTimeout(() => setDeleteArmed(false), CONFIRM_TIMEOUT_MS);
       return;
     }
-    fetch(`/api/tags/${tag.id}`, { method: "DELETE" }).then(onChanged);
+    setDeleteArmed(false);
+    const ok = await sendTagRequest(`/api/tags/${tag.id}`, { method: "DELETE" }, "Failed to delete tag");
+    if (ok) onChanged();
   }
 
-  function handleMergeClick() {
+  async function handleMergeClick() {
     if (!mergeTarget) return;
     if (!mergeArmed) {
       setMergeArmed(true);
       setTimeout(() => setMergeArmed(false), CONFIRM_TIMEOUT_MS);
       return;
     }
-    fetch("/api/tags/merge", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ fromId: tag.id, intoId: Number(mergeTarget) }),
-    }).then(onChanged);
+    setMergeArmed(false);
+    const ok = await sendTagRequest(
+      "/api/tags/merge",
+      {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ fromId: tag.id, intoId: Number(mergeTarget) }),
+      },
+      "Failed to merge tags",
+    );
+    if (ok) onChanged();
   }
 
-  function handlePickColor(family: string) {
+  async function handlePickColor(family: string) {
     const nextColor = tag.color === family ? null : family;
-    fetch(`/api/tags/${tag.id}`, {
-      method: "PATCH",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ color: nextColor }),
-    }).then(onChanged);
     setColorPickerOpen(false);
+    const ok = await sendTagRequest(
+      `/api/tags/${tag.id}`,
+      {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ color: nextColor }),
+      },
+      "Failed to update tag color",
+    );
+    if (ok) onChanged();
   }
 
   const otherTags = allTags.filter((t) => t.id !== tag.id);
@@ -181,7 +220,7 @@ function TagRow({ tag, allTags, onChanged }: TagRowProps) {
           onChange={(e) => setName(e.target.value)}
           onBlur={handleRename}
           onKeyDown={(e) => {
-            if (e.key === "Enter") handleRename();
+            if (e.key === "Enter") void handleRename();
             if (e.key === "Escape") {
               setEditing(false);
               setName(tag.name);
