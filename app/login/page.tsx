@@ -17,17 +17,22 @@ export default function LoginPage() {
     setLoading(true);
     setError(null);
 
-    const res = await fetch("/api/auth", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ password }),
-    });
+    try {
+      const res = await fetch("/api/auth", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ password }),
+      });
 
-    setLoading(false);
-
-    if (!res.ok) {
-      setError("Wrong password");
+      if (!res.ok) {
+        setError("Wrong password");
+        return;
+      }
+    } catch {
+      setError("Could not reach the server");
       return;
+    } finally {
+      setLoading(false);
     }
 
     router.push("/");

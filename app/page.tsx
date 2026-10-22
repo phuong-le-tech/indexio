@@ -60,6 +60,8 @@ function HomePageContent() {
   const [brokenIds, setBrokenIds] = useState<Set<number>>(new Set());
   const [checkingLinks, setCheckingLinks] = useState(false);
   const [importing, setImporting] = useState(false);
+  const [importMessage, setImportMessage] = useState<string | null>(null);
+  const [linksLoadFailed, setLinksLoadFailed] = useState(false);
   const importInputRef = useRef<HTMLInputElement | null>(null);
   const addInputRef = useRef<HTMLInputElement | null>(null);
 
@@ -71,19 +73,26 @@ function HomePageContent() {
       if (sort !== "created_desc") params.set("sort", sort);
       if (offset) params.set("offset", String(offset));
 
-      const res = await fetch(`/api/links?${params.toString()}`);
-      const data = await res.json();
-      const fetched: Link[] = data.links || [];
-      const count = data.matchCount ?? 0;
+      try {
+        const res = await fetch(`/api/links?${params.toString()}`);
+        if (!res.ok) throw new Error(`GET /api/links failed with ${res.status}`);
+        const data = await res.json();
+        const fetched: Link[] = data.links || [];
+        const count = data.matchCount ?? 0;
 
-      setLinks((prev) => (offset ? [...prev, ...fetched] : fetched));
-      setMatchCount(count);
-      if (!query && !activeTag) {
-        setTotalLinks(count);
+        setLinks((prev) => (offset ? [...prev, ...fetched] : fetched));
+        setMatchCount(count);
+        if (!query && !activeTag) {
+          setTotalLinks(count);
+        }
+        setHasMore(Boolean(data.hasMore));
+        setLinksLoadFailed(false);
+      } catch {
+        setLinksLoadFailed(true);
+      } finally {
+        setLoading(false);
+        setLoadingMore(false);
       }
-      setHasMore(Boolean(data.hasMore));
-      setLoading(false);
-      setLoadingMore(false);
     },
     [query, activeTag, sort]
   );
@@ -94,21 +103,26 @@ function HomePageContent() {
   }
 
   const loadTags = useCallback(async () => {
-    const res = await fetch("/api/tags");
-    const data = await res.json();
-    const fetched: Tag[] = data.tags || [];
-    setTags(fetched);
-    setTagColorOverrides(fetched);
+    try {
+      const res = await fetch("/api/tags");
+      if (!res.ok) throw new Error(`GET /api/tags failed with ${res.status}`);
+      const data = await res.json();
+      const fetched: Tag[] = data.tags || [];
+      setTags(fetched);
+      setTagColorOverrides(fetched);
+    } catch {
+      // Tag chips are secondary: keep the last known tags rather than blocking the page.
+    }
   }, []);
 
   useEffect(() => {
     // eslint-disable-next-line react-hooks/set-state-in-effect -- data fetch on mount/query change
-    loadLinks();
+    void loadLinks();
   }, [loadLinks]);
 
   useEffect(() => {
     // eslint-disable-next-line react-hooks/set-state-in-effect -- data fetch on mount
-    loadTags();
+    void loadTags();
   }, [loadTags]);
 
   useEffect(() => {
@@ -131,7 +145,7 @@ function HomePageContent() {
       const qs = params.toString();
       router.replace(qs ? `/?${qs}` : "/", { scroll: false });
       setLoading(true);
-      loadLinks();
+      void loadLinks();
     }, 120);
     return () => {
       if (debounceRef.current) clearTimeout(debounceRef.current);
@@ -140,8 +154,8 @@ function HomePageContent() {
   }, [query, activeTag, sort]);
 
   function handleChanged() {
-    loadLinks();
-    loadTags();
+    void loadLinks();
+    void loadTags();
   }
 
   function toggleSelectionMode() {
@@ -163,20 +177,39 @@ function HomePageContent() {
     });
   }
 
+  // Resolves to false (and shows a message) instead of rejecting; busy flag always resets.
+  async function runBulkAction(payload: object, failureMessage: string): Promise<boolean> {
+    setBulkBusy(true);
+    setImportMessage(null);
+    try {
+      const res = await fetch("/api/links/bulk", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload),
+      });
+      if (res.ok) return true;
+      const body = await res.json().catch(() => ({}));
+      setImportMessage(body.error || failureMessage);
+    } catch {
+      setImportMessage(failureMessage);
+    } finally {
+      setBulkBusy(false);
+    }
+    return false;
+  }
+
   async function handleBulkDelete() {
     if (!bulkDeleteArmed) {
       setBulkDeleteArmed(true);
       setTimeout(() => setBulkDeleteArmed(false), 3000);
       return;
     }
-    setBulkBusy(true);
-    await fetch("/api/links/bulk", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ ids: Array.from(selectedIds), action: "delete" }),
-    });
-    setBulkBusy(false);
+    const ok = await runBulkAction(
+      { ids: Array.from(selectedIds), action: "delete" },
+      "Failed to delete links"
+    );
     setBulkDeleteArmed(false);
+    if (!ok) return;
     toggleSelectionMode();
     handleChanged();
   }
@@ -184,13 +217,11 @@ function HomePageContent() {
   async function handleBulkAddTag() {
     const tag = bulkTagInput.trim();
     if (!tag || selectedIds.size === 0) return;
-    setBulkBusy(true);
-    await fetch("/api/links/bulk", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ ids: Array.from(selectedIds), action: "add_tag", tag }),
-    });
-    setBulkBusy(false);
+    const ok = await runBulkAction(
+      { ids: Array.from(selectedIds), action: "add_tag", tag },
+      "Failed to add tag"
+    );
+    if (!ok) return;
     setBulkTagInput("");
     handleChanged();
   }
@@ -216,6 +247,19 @@ function HomePageContent() {
         `${broken.size} link${broken.size === 1 ? "" : "s"} unreachable - flagged below.`,
         "error"
       );
+    setImportMessage(null);
+    try {
+      const res = await fetch("/api/links/check", { method: "POST" });
+      if (!res.ok) throw new Error(`POST /api/links/check failed with ${res.status}`);
+      const data = await res.json();
+      const broken = new Set<number>(
+        (data.results || []).filter((r: { ok: boolean }) => !r.ok).map((r: { id: number }) => r.id)
+      );
+      setBrokenIds(broken);
+    } catch {
+      setImportMessage("Could not check links");
+    } finally {
+      setCheckingLinks(false);
     }
   }
 
@@ -225,7 +269,6 @@ function HomePageContent() {
     if (!file) return;
 
     const format = file.name.toLowerCase().endsWith(".csv") ? "csv" : "json";
-    const content = await file.text();
 
     setImporting(true);
     const res = await fetch("/api/links/import", {
@@ -246,17 +289,48 @@ function HomePageContent() {
       "success"
     );
     handleChanged();
+    setImportMessage(null);
+    try {
+      const content = await file.text();
+      const res = await fetch("/api/links/import", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ format, content }),
+      });
+      const data = await res.json();
+
+      if (!res.ok) {
+        setImportMessage(data.error || "Import failed");
+        return;
+      }
+
+      setImportMessage(
+        `Imported ${data.imported} link${data.imported === 1 ? "" : "s"}${data.skipped ? `, skipped ${data.skipped}` : ""}`
+      );
+      handleChanged();
+      setTimeout(() => setImportMessage(null), 5000);
+    } catch {
+      setImportMessage("Import failed");
+    } finally {
+      setImporting(false);
+    }
   }
 
   async function handleLogout() {
-    await fetch("/api/auth", { method: "DELETE" });
+    try {
+      const res = await fetch("/api/auth", { method: "DELETE" });
+      if (!res.ok) throw new Error(`DELETE /api/auth failed with ${res.status}`);
+    } catch {
+      setImportMessage("Could not log out");
+      return;
+    }
     router.push("/login");
     router.refresh();
   }
 
   const hasFilter = query !== "" || activeTag !== null;
-  const isEmpty = !loading && links.length === 0 && !hasFilter;
-  const isNoResults = !loading && links.length === 0 && hasFilter;
+  const isEmpty = !loading && !linksLoadFailed && links.length === 0 && !hasFilter;
+  const isNoResults = !loading && !linksLoadFailed && links.length === 0 && hasFilter;
 
   const menuItems: MenuItem[] = [
     {
@@ -344,6 +418,26 @@ function HomePageContent() {
             setActiveTag(null);
           }}
         />
+        <div className="rounded-[var(--radius-lg)] border border-dashed border-[var(--color-line)] px-5 py-12 text-center">
+          <p className="text-[var(--text-sm)] text-[var(--color-ink-2)]">No matches.</p>
+          <p className="mt-1 text-[var(--text-xs)] text-[var(--color-ink-3)]">
+            Try a different search or clear the active tag.
+          </p>
+        </div>
+      )}
+
+      {linksLoadFailed && (
+        <p className="mb-3 text-[var(--text-xs)] text-[var(--color-danger)]">Could not load links.</p>
+      )}
+
+      {importMessage && (
+        <p className="mb-3 text-[var(--text-xs)] text-[var(--color-ink-2)]">{importMessage}</p>
+      )}
+
+      {brokenIds.size > 0 && (
+        <p className="mb-3 text-[var(--text-xs)] text-[var(--color-danger)]">
+          {brokenIds.size} link{brokenIds.size === 1 ? "" : "s"} unreachable — flagged below.
+        </p>
       )}
 
       {!loading && links.length > 0 && (
