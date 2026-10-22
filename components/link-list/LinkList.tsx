@@ -35,9 +35,15 @@ export function LinkList({
   async function handleDelete(id: number) {
     setDeletingIds((prev) => new Set(prev).add(id));
 
-    const res = await fetch(`/api/links/${id}`, { method: "DELETE" });
+    let deleted = false;
+    try {
+      const res = await fetch(`/api/links/${id}`, { method: "DELETE" });
+      deleted = res.ok;
+    } catch {
+      // Network failure: fall through and un-mark the card as deleting.
+    }
 
-    if (!res.ok) {
+    if (!deleted) {
       setDeletingIds((prev) => {
         const next = new Set(prev);
         next.delete(id);
@@ -285,20 +291,29 @@ function EditFields({ link, onSaved, onCancel }: EditFieldsProps) {
   const [notes, setNotes] = useState(link.notes || "");
   const [tags, setTags] = useState(link.tags.join(", "));
   const [saving, setSaving] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   async function handleSave() {
     setSaving(true);
-    await fetch(`/api/links/${link.id}`, {
-      method: "PATCH",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        notes,
-        tags: tags
-          .split(",")
-          .map((t) => t.trim())
-          .filter(Boolean),
-      }),
-    });
+    setError(null);
+    try {
+      const res = await fetch(`/api/links/${link.id}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          notes,
+          tags: tags
+            .split(",")
+            .map((t) => t.trim())
+            .filter(Boolean),
+        }),
+      });
+      if (!res.ok) throw new Error(`PATCH /api/links/${link.id} failed with ${res.status}`);
+    } catch {
+      setError("Failed to save changes");
+      setSaving(false);
+      return;
+    }
     setSaving(false);
     onSaved();
   }
@@ -336,6 +351,7 @@ function EditFields({ link, onSaved, onCancel }: EditFieldsProps) {
           Cancel
         </button>
       </div>
+      {error && <p className="text-[var(--text-xs)] text-[var(--color-danger)]">{error}</p>}
     </div>
   );
 }
