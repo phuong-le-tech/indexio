@@ -46,22 +46,27 @@ export function LinkForm({ onCreated, availableTags }: LinkFormProps) {
     setLoading(true);
     setError(null);
 
-    const res = await fetch("/api/links", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        url,
-        notes: notes || undefined,
-        tags: selectedTags,
-      }),
-    });
+    try {
+      const res = await fetch("/api/links", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          url,
+          notes: notes || undefined,
+          tags: selectedTags,
+        }),
+      });
 
-    setLoading(false);
-
-    if (!res.ok) {
-      const body = await res.json().catch(() => ({}));
-      setError(body.error || "Failed to add link");
+      if (!res.ok) {
+        const body = await res.json().catch(() => ({}));
+        setError(body.error || "Failed to add link");
+        return;
+      }
+    } catch {
+      setError("Failed to add link");
       return;
+    } finally {
+      setLoading(false);
     }
 
     setUrl("");
