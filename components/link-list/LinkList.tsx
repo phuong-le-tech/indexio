@@ -1,7 +1,10 @@
 "use client";
 
 import { useState } from "react";
-import { LinkIcon, PencilIcon, TrashIcon } from "@/components/ui/Icon";
+import { LinkThumbnail } from "@/components/link-list/LinkThumbnail";
+import { Button } from "@/components/ui/Button";
+import { CheckIcon, LinkIcon, PencilIcon, TrashIcon } from "@/components/ui/Icon";
+import { FOCUS_RING } from "@/components/ui/styles";
 import { hostname, relativeTime } from "@/lib/format";
 import { getTagColor } from "@/lib/tagColors";
 import type { Link } from "@/lib/types";
@@ -55,7 +58,7 @@ export function LinkList({
 
   return (
     <>
-      <ul className="grid grid-cols-1 items-stretch gap-4 sm:grid-cols-2 xl:grid-cols-3">
+      <ul className="grid grid-cols-1 items-stretch gap-5 sm:grid-cols-2 xl:grid-cols-3">
         {links.map((link) => (
           <LinkCard
             key={link.id}
@@ -77,15 +80,10 @@ export function LinkList({
         ))}
       </ul>
       {hasMore && (
-        <div className="mt-4 flex justify-center">
-          <button
-            type="button"
-            onClick={onLoadMore}
-            disabled={loadingMore}
-            className="rounded-[var(--radius-md)] border border-[var(--color-hairline)] px-4 py-2 text-[var(--text-sm)] text-[var(--color-ink-2)] hover:bg-[var(--color-surface-hover)] hover:text-[var(--color-ink)] disabled:opacity-50"
-          >
+        <div className="mt-6 flex justify-center">
+          <Button variant="secondary" onClick={onLoadMore} disabled={loadingMore}>
             {loadingMore ? "Loading…" : "Load more"}
-          </button>
+          </Button>
         </div>
       )}
     </>
@@ -125,9 +123,7 @@ function LinkCard({
 
   return (
     <li
-      className={`group relative flex gap-4 rounded-[var(--radius-lg)] border p-5 transition-all duration-150 ${
-        editing ? "h-auto" : "h-60 overflow-hidden"
-      } ${
+      className={`group relative flex flex-col overflow-hidden rounded-[var(--radius-lg)] border shadow-sm transition-[transform,box-shadow,border-color,background-color,opacity] duration-200 has-[:focus-visible]:border-[var(--color-accent)] has-[:focus-visible]:ring-[3px] has-[:focus-visible]:ring-[var(--color-focus)] ${
         selected
           ? "border-[var(--color-accent)] bg-[var(--color-accent-bg)]"
           : "border-[var(--color-hairline)] bg-[var(--color-surface)]"
@@ -136,7 +132,7 @@ function LinkCard({
           ? "scale-[0.98] opacity-40"
           : selected
             ? ""
-            : "hover:border-[var(--color-line)] hover:bg-[var(--color-surface-hover)] focus-within:border-[var(--color-accent)] focus-within:ring-[3px] focus-within:ring-[var(--color-accent)]/20"
+            : "hover:-translate-y-0.5 hover:border-[var(--color-line)] hover:shadow-md"
       }`}
     >
       {selectionMode ? (
@@ -145,7 +141,7 @@ function LinkCard({
           onClick={onToggleSelect}
           aria-label={selected ? `Deselect ${displayTitle}` : `Select ${displayTitle}`}
           aria-pressed={selected}
-          className="absolute inset-0 z-0 rounded-[var(--radius-lg)]"
+          className="absolute inset-0 z-0 rounded-[var(--radius-lg)] focus-visible:outline-none"
         />
       ) : (
         <a
@@ -153,60 +149,41 @@ function LinkCard({
           target="_blank"
           rel="noopener noreferrer"
           aria-label={displayTitle}
-          className="absolute inset-0 z-0 rounded-[var(--radius-lg)]"
+          className="absolute inset-0 z-0 rounded-[var(--radius-lg)] focus-visible:outline-none"
         />
       )}
 
-      <div
-        className={`pointer-events-none relative z-[1] flex h-5 w-5 shrink-0 items-center justify-center rounded-[var(--radius-sm)] border ${
-          selectionMode && selected
-            ? "border-[var(--color-accent)] bg-[var(--color-accent-solid)]"
-            : "border-[var(--color-hairline)] bg-[var(--color-inset)]"
-        }`}
-      >
-        {selectionMode ? (
-          selected && (
-            <svg
-              width="12"
-              height="12"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="var(--color-inverse)"
-              strokeWidth={3}
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              aria-hidden="true"
-            >
-              <path d="M20 6 9 17l-5-5" />
-            </svg>
-          )
-        ) : link.favicon_url && !faviconFailed ? (
-          // eslint-disable-next-line @next/next/no-img-element
-          <img
-            src={link.favicon_url}
-            alt=""
-            width={12}
-            height={12}
-            className="rounded-[2px]"
-            onError={() => setFaviconFailed(true)}
-          />
-        ) : (
-          <LinkIcon size={11} className="text-[var(--color-ink-3)]" />
+      <div className="pointer-events-none relative z-[1]">
+        <LinkThumbnail imageUrl={link.image_url} faviconUrl={link.favicon_url} host={host} />
+        {selectionMode && (
+          <span
+            className={`absolute top-3 left-3 flex h-6 w-6 items-center justify-center rounded-[var(--radius-sm)] border shadow-sm ${
+              selected
+                ? "border-[var(--color-accent)] bg-[var(--color-accent-solid)] text-[var(--color-inverse)]"
+                : "border-[var(--color-line-strong)] bg-[var(--color-surface)]"
+            }`}
+          >
+            {selected && <CheckIcon size={14} />}
+          </span>
         )}
       </div>
 
-      <div className="pointer-events-none relative z-[1] flex min-w-0 flex-1 flex-col">
-        <p
-          className={`line-clamp-2 leading-snug break-words ${
-            link.title
-              ? "text-[var(--text-lg)] font-semibold text-[var(--color-ink)]"
-              : "font-mono text-[var(--text-base)] text-[var(--color-ink)]"
-          }`}
-        >
-          {displayTitle}
-        </p>
-
-        <p className="mt-1 flex flex-wrap items-center gap-x-2 gap-y-1 font-mono text-[var(--text-xs)] text-[var(--color-ink-3)]">
+      <div className="pointer-events-none relative z-[1] flex min-w-0 flex-1 flex-col p-4">
+        <p className="flex items-center gap-2 font-mono text-[var(--text-xs)] text-[var(--color-ink-3)]">
+          {link.favicon_url && !faviconFailed ? (
+            // eslint-disable-next-line @next/next/no-img-element -- tiny remote favicon
+            <img
+              src={link.favicon_url}
+              alt=""
+              width={14}
+              height={14}
+              referrerPolicy="no-referrer"
+              className="shrink-0 rounded-[2px]"
+              onError={() => setFaviconFailed(true)}
+            />
+          ) : (
+            <LinkIcon size={13} className="shrink-0" />
+          )}
           <span className="min-w-0 truncate">{host}</span>
           <span aria-hidden="true">·</span>
           <span className="shrink-0">{relativeTime(link.created_at)}</span>
@@ -217,8 +194,18 @@ function LinkCard({
           )}
         </p>
 
+        <p
+          className={`mt-2 line-clamp-2 leading-snug break-words ${
+            link.title
+              ? "text-[var(--text-lg)] font-semibold text-[var(--color-ink)]"
+              : "font-mono text-[var(--text-base)] text-[var(--color-ink)]"
+          }`}
+        >
+          {displayTitle}
+        </p>
+
         {link.description && (
-          <p className="mt-2 line-clamp-2 text-[var(--text-sm)] leading-relaxed text-[var(--color-ink-2)]">
+          <p className="mt-1.5 line-clamp-2 text-[var(--text-sm)] leading-relaxed text-[var(--color-ink-2)]">
             {link.description}
           </p>
         )}
@@ -233,7 +220,7 @@ function LinkCard({
           <EditFields link={link} onSaved={onSaved} onCancel={onCancelEdit} />
         ) : (
           link.tags.length > 0 && (
-            <div className="mt-3 flex flex-wrap gap-1.5 overflow-hidden">
+            <div className="mt-auto flex flex-wrap gap-1.5 overflow-hidden pt-3">
               {link.tags.map((tag) => {
                 const color = getTagColor(tag);
                 return (
@@ -257,7 +244,7 @@ function LinkCard({
             type="button"
             onClick={onEdit}
             aria-label="Edit"
-            className="pointer-events-auto flex h-7 w-7 items-center justify-center rounded-[var(--radius-sm)] text-[var(--color-ink-3)] hover:bg-[var(--color-inset)] hover:text-[var(--color-ink)] focus-visible:outline-none focus-visible:ring-[3px] focus-visible:ring-[var(--color-accent)]/20"
+            className={`pointer-events-auto flex h-8 w-8 items-center justify-center rounded-[var(--radius-md)] border border-[var(--color-line)] bg-[var(--color-surface-raised)] text-[var(--color-ink-2)] shadow-sm hover:text-[var(--color-ink)] ${FOCUS_RING}`}
           >
             <PencilIcon size={15} />
           </button>
@@ -265,7 +252,7 @@ function LinkCard({
             type="button"
             onClick={onDelete}
             aria-label="Delete"
-            className="pointer-events-auto flex h-7 w-7 items-center justify-center rounded-[var(--radius-sm)] text-[var(--color-danger)] hover:bg-[var(--color-danger-bg)] focus-visible:outline-none focus-visible:ring-[3px] focus-visible:ring-[var(--color-accent)]/20"
+            className={`pointer-events-auto flex h-8 w-8 items-center justify-center rounded-[var(--radius-md)] border border-[var(--color-line)] bg-[var(--color-surface-raised)] text-[var(--color-danger)] shadow-sm hover:bg-[var(--color-danger-bg)] ${FOCUS_RING}`}
           >
             <TrashIcon size={15} />
           </button>
@@ -310,31 +297,22 @@ function EditFields({ link, onSaved, onCancel }: EditFieldsProps) {
         onChange={(e) => setNotes(e.target.value)}
         placeholder="Notes"
         rows={2}
-        className="w-full rounded-[var(--radius-sm)] border border-[var(--color-hairline)] bg-[var(--color-page)] px-3 py-1.5 text-[var(--text-sm)] text-[var(--color-ink)] outline-none focus:border-[var(--color-accent)]"
+        className="w-full rounded-[var(--radius-sm)] border border-[var(--color-hairline)] bg-[var(--color-inset)] px-3 py-1.5 text-[var(--text-sm)] text-[var(--color-ink)] outline-none focus:border-[var(--color-accent)]"
       />
       <input
         type="text"
         value={tags}
         onChange={(e) => setTags(e.target.value)}
         placeholder="tags, comma, separated"
-        className="w-full rounded-[var(--radius-sm)] border border-[var(--color-hairline)] bg-[var(--color-page)] px-3 py-1.5 text-[var(--text-xs)] text-[var(--color-ink)] outline-none focus:border-[var(--color-accent)]"
+        className="w-full rounded-[var(--radius-sm)] border border-[var(--color-hairline)] bg-[var(--color-inset)] px-3 py-1.5 text-[var(--text-xs)] text-[var(--color-ink)] outline-none focus:border-[var(--color-accent)]"
       />
       <div className="flex gap-2">
-        <button
-          type="button"
-          onClick={handleSave}
-          disabled={saving}
-          className="rounded-[var(--radius-sm)] bg-[var(--color-accent-solid)] px-3 py-1.5 text-[var(--text-xs)] font-medium text-[var(--color-inverse)] disabled:opacity-50"
-        >
+        <Button variant="primary" size="sm" onClick={handleSave} disabled={saving}>
           {saving ? "Saving…" : "Save"}
-        </button>
-        <button
-          type="button"
-          onClick={onCancel}
-          className="rounded-[var(--radius-sm)] border border-[var(--color-hairline)] px-3 py-1.5 text-[var(--text-xs)] text-[var(--color-ink-2)] hover:bg-[var(--color-surface-hover)]"
-        >
+        </Button>
+        <Button variant="secondary" size="sm" onClick={onCancel}>
           Cancel
-        </button>
+        </Button>
       </div>
     </div>
   );
