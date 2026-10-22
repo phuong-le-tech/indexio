@@ -3,6 +3,7 @@
 import { Suspense, useCallback, useEffect, useRef, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { LinkForm } from "@/components/link-form/LinkForm";
+import { BulkBar } from "@/components/link-list/BulkBar";
 import { LinkList } from "@/components/link-list/LinkList";
 import { LinkListSkeleton } from "@/components/link-list/LinkListSkeleton";
 import { SearchBar } from "@/components/ui/SearchBar";
@@ -16,6 +17,7 @@ import {
   UploadIcon,
 } from "@/components/ui/Icon";
 import type { MenuItem } from "@/components/ui/Menu";
+import { SortSelect } from "@/components/ui/SortSelect";
 import { TagFilter } from "@/components/ui/TagFilter";
 import { setTagColorOverrides } from "@/lib/tagColors";
 import type { Link, Tag } from "@/lib/types";
@@ -277,7 +279,7 @@ function HomePageContent() {
         onChange={handleImportFile}
         className="hidden"
       />
-    <div className="mx-auto w-full max-w-[var(--container-wide)] px-5 py-8">
+    <div className={`mx-auto w-full max-w-[var(--container-wide)] px-5 py-8 ${selectionMode ? "pb-32" : ""}`}>
       <div className="mx-auto w-full max-w-[var(--container-col)]">
       <div className="mb-6 flex flex-col gap-3">
         <SearchBar
@@ -293,59 +295,14 @@ function HomePageContent() {
         />
       </div>
 
-      {selectionMode && (
-        <div className="mb-4 flex flex-wrap items-center gap-2 rounded-[var(--radius-md)] bg-[var(--color-inset)] px-3 py-2">
-          <span className="text-[var(--text-xs)] text-[var(--color-ink-2)]">
-            {selectedIds.size} selected
-          </span>
-          <input
-            type="text"
-            value={bulkTagInput}
-            onChange={(e) => setBulkTagInput(e.target.value)}
-            placeholder="Add tag to selected…"
-            disabled={selectedIds.size === 0 || bulkBusy}
-            className="min-w-0 flex-1 rounded-[var(--radius-sm)] border border-[var(--color-hairline)] bg-[var(--color-surface)] px-2 py-1 text-[var(--text-xs)] text-[var(--color-ink)] outline-none focus:border-[var(--color-accent)] disabled:opacity-50"
-          />
-          <button
-            type="button"
-            onClick={handleBulkAddTag}
-            disabled={!bulkTagInput.trim() || selectedIds.size === 0 || bulkBusy}
-            className="rounded-[var(--radius-sm)] border border-[var(--color-hairline)] px-2 py-1 text-[var(--text-xs)] text-[var(--color-ink-2)] hover:bg-[var(--color-surface-hover)] disabled:opacity-50"
-          >
-            Add tag
-          </button>
-          <button
-            type="button"
-            onClick={handleBulkDelete}
-            disabled={selectedIds.size === 0 || bulkBusy}
-            className={`rounded-[var(--radius-sm)] px-2 py-1 text-[var(--text-xs)] font-medium disabled:opacity-50 ${
-              bulkDeleteArmed
-                ? "bg-[var(--color-danger)] text-[var(--color-inverse)]"
-                : "text-[var(--color-danger)] hover:bg-[var(--color-danger-bg)]"
-            }`}
-          >
-            {bulkDeleteArmed ? "Confirm?" : "Delete"}
-          </button>
+      <div className="mb-5 flex items-center gap-3">
+        <div className="min-w-0 flex-1">
+          {tags.length > 0 && (
+            <TagFilter tags={tags} activeTag={activeTag} onSelect={setActiveTag} totalCount={totalLinks} />
+          )}
         </div>
-      )}
-      <div className="mb-4 flex justify-end">
-        <select
-          value={sort}
-          onChange={(e) => setSort(e.target.value)}
-          aria-label="Sort links"
-          className="rounded-[var(--radius-sm)] border border-[var(--color-hairline)] bg-[var(--color-surface)] px-2 py-1 text-[var(--text-xs)] text-[var(--color-ink-2)] outline-none focus:border-[var(--color-accent)]"
-        >
-          <option value="created_desc">Newest</option>
-          <option value="created_asc">Oldest</option>
-          <option value="title_asc">Title A–Z</option>
-        </select>
+        <SortSelect value={sort} onChange={setSort} />
       </div>
-
-      {tags.length > 0 && (
-        <div className="mb-4">
-          <TagFilter tags={tags} activeTag={activeTag} onSelect={setActiveTag} totalCount={totalLinks} />
-        </div>
-      )}
       </div>
 
       {loading && showSkeleton && <LinkListSkeleton />}
@@ -392,6 +349,18 @@ function HomePageContent() {
         />
       )}
     </div>
+    {selectionMode && (
+      <BulkBar
+        selectedCount={selectedIds.size}
+        tagInput={bulkTagInput}
+        onTagInputChange={setBulkTagInput}
+        onAddTag={handleBulkAddTag}
+        deleteArmed={bulkDeleteArmed}
+        onDelete={handleBulkDelete}
+        onCancel={toggleSelectionMode}
+        busy={bulkBusy}
+      />
+    )}
     </>
   );
 }
