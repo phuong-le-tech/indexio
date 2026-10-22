@@ -2,17 +2,17 @@ const ROWS = 6;
 
 export function LinkListSkeleton() {
   return (
-    <ul className="grid grid-cols-1 items-stretch gap-4 sm:grid-cols-2 xl:grid-cols-3">
+    <ul className="grid grid-cols-1 items-stretch gap-5 sm:grid-cols-2 xl:grid-cols-3">
       {Array.from({ length: ROWS }).map((_, i) => (
         <li
           key={i}
-          className="flex h-60 gap-4 rounded-[var(--radius-lg)] border border-[var(--color-hairline)] bg-[var(--color-surface)] p-5"
+          className="flex animate-pulse flex-col overflow-hidden rounded-[var(--radius-lg)] border border-[var(--color-hairline)] bg-[var(--color-surface)]"
         >
-          <div className="h-5 w-5 shrink-0 rounded-[var(--radius-sm)] bg-[var(--color-skeleton)]" />
-          <div className="flex min-w-0 flex-1 flex-col gap-2">
-            <div className="h-4 w-3/5 rounded-[var(--radius-sm)] bg-[var(--color-skeleton)]" />
+          <div className="aspect-video w-full bg-[var(--color-skeleton)]" />
+          <div className="flex flex-col gap-2 p-4">
+            <div className="h-3 w-2/5 rounded-[var(--radius-sm)] bg-[var(--color-skeleton)]" />
+            <div className="h-4 w-4/5 rounded-[var(--radius-sm)] bg-[var(--color-skeleton)]" />
             <div className="h-3 w-full rounded-[var(--radius-sm)] bg-[var(--color-skeleton)]" />
-            <div className="h-3 w-4/5 rounded-[var(--radius-sm)] bg-[var(--color-skeleton)]" />
           </div>
         </li>
       ))}

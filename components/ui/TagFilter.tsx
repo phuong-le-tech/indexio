@@ -1,7 +1,7 @@
 "use client";
 
-import Link from "next/link";
 import { useState } from "react";
+import { FOCUS_RING } from "@/components/ui/styles";
 import { getTagColor } from "@/lib/tagColors";
 import type { Tag } from "@/lib/types";
 
@@ -27,7 +27,7 @@ export function TagFilter({ tags, activeTag, onSelect, totalCount }: TagFilterPr
   const hiddenCount = tags.length - visible.length;
 
   return (
-    <div className="flex flex-wrap items-center gap-2">
+    <div className="flex items-center gap-2 overflow-x-auto px-1 py-1 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
       <Pill label="All" count={totalCount} active={activeTag === null} onClick={() => onSelect(null)} />
       {visible.map((tag) => (
         <Pill
@@ -43,7 +43,7 @@ export function TagFilter({ tags, activeTag, onSelect, totalCount }: TagFilterPr
         <button
           type="button"
           onClick={() => setShowAll(true)}
-          className="text-[var(--text-xs)] text-[var(--color-ink-3)] underline decoration-dotted underline-offset-2 hover:text-[var(--color-ink)]"
+          className={`shrink-0 rounded-[var(--radius-sm)] px-1 text-[var(--text-xs)] whitespace-nowrap text-[var(--color-ink-3)] underline decoration-dotted underline-offset-2 hover:text-[var(--color-ink)] ${FOCUS_RING}`}
         >
           +{hiddenCount} more
         </button>
@@ -52,17 +52,11 @@ export function TagFilter({ tags, activeTag, onSelect, totalCount }: TagFilterPr
         <button
           type="button"
           onClick={() => setShowAll(false)}
-          className="text-[var(--text-xs)] text-[var(--color-ink-3)] underline decoration-dotted underline-offset-2 hover:text-[var(--color-ink)]"
+          className={`shrink-0 rounded-[var(--radius-sm)] px-1 text-[var(--text-xs)] whitespace-nowrap text-[var(--color-ink-3)] underline decoration-dotted underline-offset-2 hover:text-[var(--color-ink)] ${FOCUS_RING}`}
         >
           Show less
         </button>
       )}
-      <Link
-        href="/tags"
-        className="text-[var(--text-xs)] text-[var(--color-ink-3)] hover:text-[var(--color-ink)]"
-      >
-        Manage tags
-      </Link>
     </div>
   );
 }
@@ -85,7 +79,7 @@ function Pill({ label, count, active, onClick, color }: PillProps) {
           ? { background: color.bg, borderColor: color.border, color: color.text }
           : undefined
       }
-      className={`flex items-center gap-2 rounded-[var(--radius-full)] border px-3 py-1.5 text-[var(--text-xs)] transition-colors focus-visible:outline-none focus-visible:ring-[3px] focus-visible:ring-[var(--color-accent)]/20 ${
+      className={`flex shrink-0 items-center gap-2 rounded-[var(--radius-full)] border px-3 py-1.5 text-[var(--text-xs)] whitespace-nowrap transition-colors ${FOCUS_RING} ${
         active
           ? color
             ? "font-medium focus-visible:border-[var(--color-accent)]"

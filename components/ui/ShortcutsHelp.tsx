@@ -1,6 +1,8 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { Kbd } from "@/components/ui/Kbd";
+import { FOCUS_RING } from "@/components/ui/styles";
 
 const SHORTCUTS: { keys: string; description: string }[] = [
   { keys: "/", description: "Focus search" },
@@ -34,7 +36,7 @@ export function ShortcutsHelp() {
         type="button"
         onClick={() => setOpen(true)}
         aria-label="Keyboard shortcuts"
-        className="flex h-6 w-6 items-center justify-center rounded-full border border-[var(--color-hairline)] text-[var(--text-2xs)] text-[var(--color-ink-3)] hover:border-[var(--color-line)] hover:text-[var(--color-ink)]"
+        className={`flex h-9 w-9 items-center justify-center rounded-[var(--radius-md)] border border-[var(--color-line)] bg-[var(--color-surface)] text-[var(--text-sm)] text-[var(--color-ink-2)] shadow-sm transition-colors hover:bg-[var(--color-surface-hover)] hover:text-[var(--color-ink)] ${FOCUS_RING}`}
       >
         ?
       </button>
@@ -44,7 +46,7 @@ export function ShortcutsHelp() {
           role="button"
           tabIndex={0}
           aria-label="Close keyboard shortcuts"
-          className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 px-5"
+          className="fixed inset-0 z-50 flex items-center justify-center bg-[var(--color-scrim)] px-5"
           onClick={(e) => {
             if (e.target === e.currentTarget) setOpen(false);
           }}
@@ -55,7 +57,7 @@ export function ShortcutsHelp() {
             }
           }}
         >
-          <div className="w-full max-w-sm rounded-[var(--radius-lg)] border border-[var(--color-hairline)] bg-[var(--color-surface)] p-5">
+          <div className="w-full max-w-sm animate-pop-in rounded-[var(--radius-lg)] border border-[var(--color-line)] bg-[var(--color-surface-raised)] p-5 shadow-lg">
             <div className="mb-4 flex items-center justify-between">
               <h2 className="text-[var(--text-base)] font-semibold text-[var(--color-ink)]">
                 Keyboard shortcuts
@@ -64,7 +66,7 @@ export function ShortcutsHelp() {
                 type="button"
                 onClick={() => setOpen(false)}
                 aria-label="Close"
-                className="text-[var(--text-sm)] text-[var(--color-ink-3)] hover:text-[var(--color-ink)]"
+                className={`flex h-7 w-7 items-center justify-center rounded-[var(--radius-sm)] text-[var(--color-ink-3)] hover:bg-[var(--color-surface-hover)] hover:text-[var(--color-ink)] ${FOCUS_RING}`}
               >
                 ×
               </button>
@@ -75,9 +77,7 @@ export function ShortcutsHelp() {
                   <span className="text-[var(--text-sm)] text-[var(--color-ink-2)]">
                     {s.description}
                   </span>
-                  <kbd className="shrink-0 rounded-[var(--radius-sm)] bg-[var(--color-inset)] px-1.5 py-0.5 font-mono text-[var(--text-2xs)] text-[var(--color-ink-3)]">
-                    {s.keys}
-                  </kbd>
+                  <Kbd>{s.keys}</Kbd>
                 </li>
               ))}
             </ul>

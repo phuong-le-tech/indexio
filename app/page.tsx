@@ -1,14 +1,28 @@
 "use client";
 
-import NavLink from "next/link";
 import { Suspense, useCallback, useEffect, useRef, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { LinkForm } from "@/components/link-form/LinkForm";
+import { BulkBar } from "@/components/link-list/BulkBar";
 import { LinkList } from "@/components/link-list/LinkList";
 import { LinkListSkeleton } from "@/components/link-list/LinkListSkeleton";
+import { EmptyState } from "@/components/ui/EmptyState";
 import { SearchBar } from "@/components/ui/SearchBar";
-import { ShortcutsHelp } from "@/components/ui/ShortcutsHelp";
+import { AppHeader } from "@/components/ui/AppHeader";
+import {
+  ActivityIcon,
+  DownloadIcon,
+  InboxIcon,
+  LogOutIcon,
+  SearchIcon,
+  SelectIcon,
+  TagIcon,
+  UploadIcon,
+} from "@/components/ui/Icon";
+import type { MenuItem } from "@/components/ui/Menu";
+import { SortSelect } from "@/components/ui/SortSelect";
 import { TagFilter } from "@/components/ui/TagFilter";
+import { useToast } from "@/components/ui/Toast";
 import { setTagColorOverrides } from "@/lib/tagColors";
 import type { Link, Tag } from "@/lib/types";
 
@@ -25,6 +39,7 @@ export default function HomePage() {
 function HomePageContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
+  const showToast = useToast();
 
   const [links, setLinks] = useState<Link[]>([]);
   const [tags, setTags] = useState<Tag[]>([]);
@@ -48,6 +63,7 @@ function HomePageContent() {
   const [importMessage, setImportMessage] = useState<string | null>(null);
   const [linksLoadFailed, setLinksLoadFailed] = useState(false);
   const importInputRef = useRef<HTMLInputElement | null>(null);
+  const addInputRef = useRef<HTMLInputElement | null>(null);
 
   const loadLinks = useCallback(
     async (offset = 0) => {
@@ -212,6 +228,25 @@ function HomePageContent() {
 
   async function handleCheckLinks() {
     setCheckingLinks(true);
+    const res = await fetch("/api/links/check", { method: "POST" });
+    if (!res.ok) {
+      setCheckingLinks(false);
+      showToast("Could not check links. Try again.", "error");
+      return;
+    }
+    const data = await res.json();
+    const broken = new Set<number>(
+      (data.results || []).filter((r: { ok: boolean }) => !r.ok).map((r: { id: number }) => r.id)
+    );
+    setBrokenIds(broken);
+    setCheckingLinks(false);
+    if (broken.size === 0) {
+      showToast("All links are reachable.", "success");
+    } else {
+      showToast(
+        `${broken.size} link${broken.size === 1 ? "" : "s"} unreachable - flagged below.`,
+        "error"
+      );
     setImportMessage(null);
     try {
       const res = await fetch("/api/links/check", { method: "POST" });
@@ -236,6 +271,24 @@ function HomePageContent() {
     const format = file.name.toLowerCase().endsWith(".csv") ? "csv" : "json";
 
     setImporting(true);
+    const res = await fetch("/api/links/import", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ format, content }),
+    });
+    const data = await res.json();
+    setImporting(false);
+
+    if (!res.ok) {
+      showToast(data.error || "Import failed", "error");
+      return;
+    }
+
+    showToast(
+      `Imported ${data.imported} link${data.imported === 1 ? "" : "s"}${data.skipped ? `, skipped ${data.skipped}` : ""}`,
+      "success"
+    );
+    handleChanged();
     setImportMessage(null);
     try {
       const content = await file.text();
@@ -279,65 +332,45 @@ function HomePageContent() {
   const isEmpty = !loading && !linksLoadFailed && links.length === 0 && !hasFilter;
   const isNoResults = !loading && !linksLoadFailed && links.length === 0 && hasFilter;
 
-  return (
-    <div className="mx-auto w-full max-w-[var(--container-wide)] px-5 py-12">
-      <div className="mx-auto w-full max-w-[var(--container-col)]">
-      <div className="mb-6 flex items-center justify-between">
-        <h1 className="text-[var(--text-xl)] text-[var(--color-ink)]">Indexio</h1>
-        <div className="flex items-center gap-4">
-          <ShortcutsHelp />
-          <button
-            type="button"
-            onClick={toggleSelectionMode}
-            className="text-[var(--text-sm)] text-[var(--color-ink-3)] hover:text-[var(--color-ink)]"
-          >
-            {selectionMode ? "Cancel" : "Select"}
-          </button>
-          <button
-            type="button"
-            onClick={handleCheckLinks}
-            disabled={checkingLinks}
-            className="text-[var(--text-sm)] text-[var(--color-ink-3)] hover:text-[var(--color-ink)] disabled:opacity-50"
-          >
-            {checkingLinks ? "Checking…" : "Check links"}
-          </button>
-          {/* eslint-disable-next-line @next/next/no-html-link-for-pages -- file download from an API route, not a page; next/link would intercept it */}
-          <a
-            href="/api/links/export"
-            className="text-[var(--text-sm)] text-[var(--color-ink-3)] hover:text-[var(--color-ink)]"
-          >
-            Export
-          </a>
-          <input
-            ref={importInputRef}
-            type="file"
-            accept=".json,.csv,application/json,text/csv"
-            onChange={handleImportFile}
-            className="hidden"
-          />
-          <button
-            type="button"
-            onClick={() => importInputRef.current?.click()}
-            disabled={importing}
-            className="text-[var(--text-sm)] text-[var(--color-ink-3)] hover:text-[var(--color-ink)] disabled:opacity-50"
-          >
-            {importing ? "Importing…" : "Import"}
-          </button>
-          <NavLink
-            href="/tags"
-            className="text-[var(--text-sm)] text-[var(--color-ink-3)] hover:text-[var(--color-ink)]"
-          >
-            Manage tags
-          </NavLink>
-          <button
-            onClick={handleLogout}
-            className="text-[var(--text-sm)] text-[var(--color-ink-3)] hover:text-[var(--color-ink)]"
-          >
-            Log out
-          </button>
-        </div>
-      </div>
+  const menuItems: MenuItem[] = [
+    {
+      label: selectionMode ? "Cancel selection" : "Select",
+      icon: <SelectIcon size={16} />,
+      onSelect: toggleSelectionMode,
+    },
+    {
+      label: checkingLinks ? "Checking…" : "Check links",
+      icon: <ActivityIcon size={16} />,
+      disabled: checkingLinks,
+      onSelect: handleCheckLinks,
+    },
+    {
+      label: importing ? "Importing…" : "Import",
+      icon: <UploadIcon size={16} />,
+      disabled: importing,
+      onSelect: () => importInputRef.current?.click(),
+    },
+    { label: "Export", icon: <DownloadIcon size={16} />, href: "/api/links/export" },
+    { label: "Manage tags", icon: <TagIcon size={16} />, onSelect: () => router.push("/tags") },
+    { label: "Log out", icon: <LogOutIcon size={16} />, danger: true, onSelect: handleLogout },
+  ];
 
+  return (
+    <>
+      <AppHeader
+        totalLinks={totalLinks}
+        menuItems={menuItems}
+        onAdd={() => addInputRef.current?.focus()}
+      />
+      <input
+        ref={importInputRef}
+        type="file"
+        accept=".json,.csv,application/json,text/csv"
+        onChange={handleImportFile}
+        className="hidden"
+      />
+    <div className={`mx-auto w-full max-w-[var(--container-wide)] px-5 py-8 ${selectionMode ? "pb-32" : ""}`}>
+      <div className="mx-auto w-full max-w-[var(--container-col)]">
       <div className="mb-6 flex flex-col gap-3">
         <SearchBar
           value={query}
@@ -345,76 +378,46 @@ function HomePageContent() {
           totalCount={totalLinks}
           resultCount={matchCount}
         />
-        <LinkForm onCreated={handleChanged} availableTags={tags.map((t) => t.name)} />
+        <LinkForm
+          onCreated={handleChanged}
+          availableTags={tags.map((t) => t.name)}
+          inputRef={addInputRef}
+        />
       </div>
 
-      {selectionMode && (
-        <div className="mb-4 flex flex-wrap items-center gap-2 rounded-[var(--radius-md)] bg-[var(--color-inset)] px-3 py-2">
-          <span className="text-[var(--text-xs)] text-[var(--color-ink-2)]">
-            {selectedIds.size} selected
-          </span>
-          <input
-            type="text"
-            value={bulkTagInput}
-            onChange={(e) => setBulkTagInput(e.target.value)}
-            placeholder="Add tag to selected…"
-            disabled={selectedIds.size === 0 || bulkBusy}
-            className="min-w-0 flex-1 rounded-[var(--radius-sm)] border border-[var(--color-hairline)] bg-[var(--color-surface)] px-2 py-1 text-[var(--text-xs)] text-[var(--color-ink)] outline-none focus:border-[var(--color-accent)] disabled:opacity-50"
-          />
-          <button
-            type="button"
-            onClick={handleBulkAddTag}
-            disabled={!bulkTagInput.trim() || selectedIds.size === 0 || bulkBusy}
-            className="rounded-[var(--radius-sm)] border border-[var(--color-hairline)] px-2 py-1 text-[var(--text-xs)] text-[var(--color-ink-2)] hover:bg-[var(--color-surface-hover)] disabled:opacity-50"
-          >
-            Add tag
-          </button>
-          <button
-            type="button"
-            onClick={handleBulkDelete}
-            disabled={selectedIds.size === 0 || bulkBusy}
-            className={`rounded-[var(--radius-sm)] px-2 py-1 text-[var(--text-xs)] font-medium disabled:opacity-50 ${
-              bulkDeleteArmed
-                ? "bg-[var(--color-danger)] text-[var(--color-inverse)]"
-                : "text-[var(--color-danger)] hover:bg-[var(--color-danger-bg)]"
-            }`}
-          >
-            {bulkDeleteArmed ? "Confirm?" : "Delete"}
-          </button>
+      <div className="mb-5 flex items-center gap-3">
+        <div className="min-w-0 flex-1">
+          {tags.length > 0 && (
+            <TagFilter tags={tags} activeTag={activeTag} onSelect={setActiveTag} totalCount={totalLinks} />
+          )}
         </div>
-      )}
-      <div className="mb-4 flex justify-end">
-        <select
-          value={sort}
-          onChange={(e) => setSort(e.target.value)}
-          aria-label="Sort links"
-          className="rounded-[var(--radius-sm)] border border-[var(--color-hairline)] bg-[var(--color-surface)] px-2 py-1 text-[var(--text-xs)] text-[var(--color-ink-2)] outline-none focus:border-[var(--color-accent)]"
-        >
-          <option value="created_desc">Newest</option>
-          <option value="created_asc">Oldest</option>
-          <option value="title_asc">Title A–Z</option>
-        </select>
+        <SortSelect value={sort} onChange={setSort} />
       </div>
-
-      {tags.length > 0 && (
-        <div className="mb-4">
-          <TagFilter tags={tags} activeTag={activeTag} onSelect={setActiveTag} totalCount={totalLinks} />
-        </div>
-      )}
       </div>
 
       {loading && showSkeleton && <LinkListSkeleton />}
 
       {isEmpty && (
-        <div className="rounded-[var(--radius-lg)] border border-dashed border-[var(--color-line)] px-5 py-12 text-center">
-          <p className="text-[var(--text-sm)] text-[var(--color-ink-2)]">Nothing saved yet.</p>
-          <p className="mt-1 text-[var(--text-xs)] text-[var(--color-ink-3)]">
-            Paste a URL above to add your first link.
-          </p>
-        </div>
+        <EmptyState
+          icon={<InboxIcon size={24} />}
+          title="Your library is empty"
+          description="Paste a URL in the box above and it will show up here with its title, image and tags."
+          actionLabel="Add your first link"
+          onAction={() => addInputRef.current?.focus()}
+        />
       )}
 
       {isNoResults && (
+        <EmptyState
+          icon={<SearchIcon size={24} />}
+          title="No matches"
+          description="Nothing fits your current search or tag. Try different words or clear the filters."
+          actionLabel="Clear filters"
+          onAction={() => {
+            setQuery("");
+            setActiveTag(null);
+          }}
+        />
         <div className="rounded-[var(--radius-lg)] border border-dashed border-[var(--color-line)] px-5 py-12 text-center">
           <p className="text-[var(--text-sm)] text-[var(--color-ink-2)]">No matches.</p>
           <p className="mt-1 text-[var(--text-xs)] text-[var(--color-ink-3)]">
@@ -451,5 +454,18 @@ function HomePageContent() {
         />
       )}
     </div>
+    {selectionMode && (
+      <BulkBar
+        selectedCount={selectedIds.size}
+        tagInput={bulkTagInput}
+        onTagInputChange={setBulkTagInput}
+        onAddTag={handleBulkAddTag}
+        deleteArmed={bulkDeleteArmed}
+        onDelete={handleBulkDelete}
+        onCancel={toggleSelectionMode}
+        busy={bulkBusy}
+      />
+    )}
+    </>
   );
 }
