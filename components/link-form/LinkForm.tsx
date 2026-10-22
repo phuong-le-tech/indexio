@@ -7,6 +7,7 @@ import { TagPicker } from "@/components/ui/TagPicker";
 interface LinkFormProps {
   onCreated: () => void;
   availableTags: string[];
+  inputRef?: React.Ref<HTMLInputElement>;
 }
 
 function isValidUrl(value: string): boolean {
@@ -18,7 +19,7 @@ function isValidUrl(value: string): boolean {
   }
 }
 
-export function LinkForm({ onCreated, availableTags }: LinkFormProps) {
+export function LinkForm({ onCreated, availableTags, inputRef }: LinkFormProps) {
   const [url, setUrl] = useState("");
   const [selectedTags, setSelectedTags] = useState<string[]>([]);
   const [notes, setNotes] = useState("");
@@ -90,6 +91,7 @@ export function LinkForm({ onCreated, availableTags }: LinkFormProps) {
       <div className="flex h-11 items-center gap-3 pr-2 pl-4">
         <LinkIcon size={15} className="shrink-0 text-[var(--color-ink-3)]" />
         <input
+          ref={inputRef}
           type="url"
           required
           value={url}

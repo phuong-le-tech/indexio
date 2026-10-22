@@ -1,13 +1,21 @@
 "use client";
 
-import NavLink from "next/link";
 import { Suspense, useCallback, useEffect, useRef, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { LinkForm } from "@/components/link-form/LinkForm";
 import { LinkList } from "@/components/link-list/LinkList";
 import { LinkListSkeleton } from "@/components/link-list/LinkListSkeleton";
 import { SearchBar } from "@/components/ui/SearchBar";
-import { ShortcutsHelp } from "@/components/ui/ShortcutsHelp";
+import { AppHeader } from "@/components/ui/AppHeader";
+import {
+  ActivityIcon,
+  DownloadIcon,
+  LogOutIcon,
+  SelectIcon,
+  TagIcon,
+  UploadIcon,
+} from "@/components/ui/Icon";
+import type { MenuItem } from "@/components/ui/Menu";
 import { TagFilter } from "@/components/ui/TagFilter";
 import { setTagColorOverrides } from "@/lib/tagColors";
 import type { Link, Tag } from "@/lib/types";
@@ -47,6 +55,7 @@ function HomePageContent() {
   const [importing, setImporting] = useState(false);
   const [importMessage, setImportMessage] = useState<string | null>(null);
   const importInputRef = useRef<HTMLInputElement | null>(null);
+  const addInputRef = useRef<HTMLInputElement | null>(null);
 
   const loadLinks = useCallback(
     async (offset = 0) => {
@@ -231,65 +240,45 @@ function HomePageContent() {
   const isEmpty = !loading && links.length === 0 && !hasFilter;
   const isNoResults = !loading && links.length === 0 && hasFilter;
 
-  return (
-    <div className="mx-auto w-full max-w-[var(--container-wide)] px-5 py-12">
-      <div className="mx-auto w-full max-w-[var(--container-col)]">
-      <div className="mb-6 flex items-center justify-between">
-        <h1 className="text-[var(--text-xl)] text-[var(--color-ink)]">Indexio</h1>
-        <div className="flex items-center gap-4">
-          <ShortcutsHelp />
-          <button
-            type="button"
-            onClick={toggleSelectionMode}
-            className="text-[var(--text-sm)] text-[var(--color-ink-3)] hover:text-[var(--color-ink)]"
-          >
-            {selectionMode ? "Cancel" : "Select"}
-          </button>
-          <button
-            type="button"
-            onClick={handleCheckLinks}
-            disabled={checkingLinks}
-            className="text-[var(--text-sm)] text-[var(--color-ink-3)] hover:text-[var(--color-ink)] disabled:opacity-50"
-          >
-            {checkingLinks ? "Checking…" : "Check links"}
-          </button>
-          {/* eslint-disable-next-line @next/next/no-html-link-for-pages -- file download from an API route, not a page; next/link would intercept it */}
-          <a
-            href="/api/links/export"
-            className="text-[var(--text-sm)] text-[var(--color-ink-3)] hover:text-[var(--color-ink)]"
-          >
-            Export
-          </a>
-          <input
-            ref={importInputRef}
-            type="file"
-            accept=".json,.csv,application/json,text/csv"
-            onChange={handleImportFile}
-            className="hidden"
-          />
-          <button
-            type="button"
-            onClick={() => importInputRef.current?.click()}
-            disabled={importing}
-            className="text-[var(--text-sm)] text-[var(--color-ink-3)] hover:text-[var(--color-ink)] disabled:opacity-50"
-          >
-            {importing ? "Importing…" : "Import"}
-          </button>
-          <NavLink
-            href="/tags"
-            className="text-[var(--text-sm)] text-[var(--color-ink-3)] hover:text-[var(--color-ink)]"
-          >
-            Manage tags
-          </NavLink>
-          <button
-            onClick={handleLogout}
-            className="text-[var(--text-sm)] text-[var(--color-ink-3)] hover:text-[var(--color-ink)]"
-          >
-            Log out
-          </button>
-        </div>
-      </div>
+  const menuItems: MenuItem[] = [
+    {
+      label: selectionMode ? "Cancel selection" : "Select",
+      icon: <SelectIcon size={16} />,
+      onSelect: toggleSelectionMode,
+    },
+    {
+      label: checkingLinks ? "Checking…" : "Check links",
+      icon: <ActivityIcon size={16} />,
+      disabled: checkingLinks,
+      onSelect: handleCheckLinks,
+    },
+    {
+      label: importing ? "Importing…" : "Import",
+      icon: <UploadIcon size={16} />,
+      disabled: importing,
+      onSelect: () => importInputRef.current?.click(),
+    },
+    { label: "Export", icon: <DownloadIcon size={16} />, href: "/api/links/export" },
+    { label: "Manage tags", icon: <TagIcon size={16} />, onSelect: () => router.push("/tags") },
+    { label: "Log out", icon: <LogOutIcon size={16} />, danger: true, onSelect: handleLogout },
+  ];
 
+  return (
+    <>
+      <AppHeader
+        totalLinks={totalLinks}
+        menuItems={menuItems}
+        onAdd={() => addInputRef.current?.focus()}
+      />
+      <input
+        ref={importInputRef}
+        type="file"
+        accept=".json,.csv,application/json,text/csv"
+        onChange={handleImportFile}
+        className="hidden"
+      />
+    <div className="mx-auto w-full max-w-[var(--container-wide)] px-5 py-8">
+      <div className="mx-auto w-full max-w-[var(--container-col)]">
       <div className="mb-6 flex flex-col gap-3">
         <SearchBar
           value={query}
@@ -297,7 +286,11 @@ function HomePageContent() {
           totalCount={totalLinks}
           resultCount={matchCount}
         />
-        <LinkForm onCreated={handleChanged} availableTags={tags.map((t) => t.name)} />
+        <LinkForm
+          onCreated={handleChanged}
+          availableTags={tags.map((t) => t.name)}
+          inputRef={addInputRef}
+        />
       </div>
 
       {selectionMode && (
@@ -399,5 +392,6 @@ function HomePageContent() {
         />
       )}
     </div>
+    </>
   );
 }

@@ -108,6 +108,7 @@ export function Menu({ label, trigger, items }: MenuProps) {
   }
 
   function handleSelect(item: MenuItem) {
+    if (item.disabled) return;
     close(true);
     item.onSelect?.();
   }
