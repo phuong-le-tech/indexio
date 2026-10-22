@@ -6,12 +6,15 @@ import { LinkForm } from "@/components/link-form/LinkForm";
 import { BulkBar } from "@/components/link-list/BulkBar";
 import { LinkList } from "@/components/link-list/LinkList";
 import { LinkListSkeleton } from "@/components/link-list/LinkListSkeleton";
+import { EmptyState } from "@/components/ui/EmptyState";
 import { SearchBar } from "@/components/ui/SearchBar";
 import { AppHeader } from "@/components/ui/AppHeader";
 import {
   ActivityIcon,
   DownloadIcon,
+  InboxIcon,
   LogOutIcon,
+  SearchIcon,
   SelectIcon,
   TagIcon,
   UploadIcon,
@@ -19,6 +22,7 @@ import {
 import type { MenuItem } from "@/components/ui/Menu";
 import { SortSelect } from "@/components/ui/SortSelect";
 import { TagFilter } from "@/components/ui/TagFilter";
+import { useToast } from "@/components/ui/Toast";
 import { setTagColorOverrides } from "@/lib/tagColors";
 import type { Link, Tag } from "@/lib/types";
 
@@ -35,6 +39,7 @@ export default function HomePage() {
 function HomePageContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
+  const showToast = useToast();
 
   const [links, setLinks] = useState<Link[]>([]);
   const [tags, setTags] = useState<Tag[]>([]);
@@ -55,7 +60,6 @@ function HomePageContent() {
   const [brokenIds, setBrokenIds] = useState<Set<number>>(new Set());
   const [checkingLinks, setCheckingLinks] = useState(false);
   const [importing, setImporting] = useState(false);
-  const [importMessage, setImportMessage] = useState<string | null>(null);
   const importInputRef = useRef<HTMLInputElement | null>(null);
   const addInputRef = useRef<HTMLInputElement | null>(null);
 
@@ -194,12 +198,25 @@ function HomePageContent() {
   async function handleCheckLinks() {
     setCheckingLinks(true);
     const res = await fetch("/api/links/check", { method: "POST" });
+    if (!res.ok) {
+      setCheckingLinks(false);
+      showToast("Could not check links. Try again.", "error");
+      return;
+    }
     const data = await res.json();
     const broken = new Set<number>(
       (data.results || []).filter((r: { ok: boolean }) => !r.ok).map((r: { id: number }) => r.id)
     );
     setBrokenIds(broken);
     setCheckingLinks(false);
+    if (broken.size === 0) {
+      showToast("All links are reachable.", "success");
+    } else {
+      showToast(
+        `${broken.size} link${broken.size === 1 ? "" : "s"} unreachable - flagged below.`,
+        "error"
+      );
+    }
   }
 
   async function handleImportFile(e: React.ChangeEvent<HTMLInputElement>) {
@@ -211,7 +228,6 @@ function HomePageContent() {
     const content = await file.text();
 
     setImporting(true);
-    setImportMessage(null);
     const res = await fetch("/api/links/import", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
@@ -221,15 +237,15 @@ function HomePageContent() {
     setImporting(false);
 
     if (!res.ok) {
-      setImportMessage(data.error || "Import failed");
+      showToast(data.error || "Import failed", "error");
       return;
     }
 
-    setImportMessage(
-      `Imported ${data.imported} link${data.imported === 1 ? "" : "s"}${data.skipped ? `, skipped ${data.skipped}` : ""}`
+    showToast(
+      `Imported ${data.imported} link${data.imported === 1 ? "" : "s"}${data.skipped ? `, skipped ${data.skipped}` : ""}`,
+      "success"
     );
     handleChanged();
-    setTimeout(() => setImportMessage(null), 5000);
   }
 
   async function handleLogout() {
@@ -308,31 +324,26 @@ function HomePageContent() {
       {loading && showSkeleton && <LinkListSkeleton />}
 
       {isEmpty && (
-        <div className="rounded-[var(--radius-lg)] border border-dashed border-[var(--color-line)] px-5 py-12 text-center">
-          <p className="text-[var(--text-sm)] text-[var(--color-ink-2)]">Nothing saved yet.</p>
-          <p className="mt-1 text-[var(--text-xs)] text-[var(--color-ink-3)]">
-            Paste a URL above to add your first link.
-          </p>
-        </div>
+        <EmptyState
+          icon={<InboxIcon size={24} />}
+          title="Your library is empty"
+          description="Paste a URL in the box above and it will show up here with its title, image and tags."
+          actionLabel="Add your first link"
+          onAction={() => addInputRef.current?.focus()}
+        />
       )}
 
       {isNoResults && (
-        <div className="rounded-[var(--radius-lg)] border border-dashed border-[var(--color-line)] px-5 py-12 text-center">
-          <p className="text-[var(--text-sm)] text-[var(--color-ink-2)]">No matches.</p>
-          <p className="mt-1 text-[var(--text-xs)] text-[var(--color-ink-3)]">
-            Try a different search or clear the active tag.
-          </p>
-        </div>
-      )}
-
-      {importMessage && (
-        <p className="mb-3 text-[var(--text-xs)] text-[var(--color-ink-2)]">{importMessage}</p>
-      )}
-
-      {brokenIds.size > 0 && (
-        <p className="mb-3 text-[var(--text-xs)] text-[var(--color-danger)]">
-          {brokenIds.size} link{brokenIds.size === 1 ? "" : "s"} unreachable — flagged below.
-        </p>
+        <EmptyState
+          icon={<SearchIcon size={24} />}
+          title="No matches"
+          description="Nothing fits your current search or tag. Try different words or clear the filters."
+          actionLabel="Clear filters"
+          onAction={() => {
+            setQuery("");
+            setActiveTag(null);
+          }}
+        />
       )}
 
       {!loading && links.length > 0 && (
