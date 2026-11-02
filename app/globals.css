@@ -1,6 +1,6 @@
 @import "tailwindcss";
 
-@theme {
+@theme static {
   --font-sans: "Inter", ui-sans-serif, system-ui;
   --font-mono: "JetBrains Mono", ui-monospace;
 
@@ -11,7 +11,7 @@
   --color-skeleton: #e4e0d6;
   --color-hairline: #dcd8ce;
   --color-line: #cec9bd;
-  --color-line-strong: #a29d91;
+  --color-line-strong: #89877d;
   --color-ink: #242822;
   --color-ink-2: #53584f;
   --color-ink-3: #666b61;
@@ -77,13 +77,13 @@
   --tag-gray-text: #56565e;
   --tag-brown-bg: #f3ebe3;
   --tag-brown-border: #dcc7b0;
-  --tag-brown-text: #8b6446;
+  --tag-brown-text: #805a3d;
   --tag-orange-bg: #fcefdc;
   --tag-orange-border: #f0c89a;
-  --tag-orange-text: #a86413;
+  --tag-orange-text: #965810;
   --tag-yellow-bg: #fbf3d3;
   --tag-yellow-border: #e9d98b;
-  --tag-yellow-text: #8a6d0c;
+  --tag-yellow-text: #7d6209;
   --tag-green-bg: #e6f4e6;
   --tag-green-border: #b8dcb8;
   --tag-green-text: #2f7a3d;

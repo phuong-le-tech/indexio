@@ -36,7 +36,7 @@ export function ShortcutsHelp() {
         type="button"
         onClick={() => setOpen(true)}
         aria-label="Keyboard shortcuts"
-        className={`flex h-11 w-11 items-center justify-center rounded-[var(--radius-md)] border border-[var(--color-line)] bg-[var(--color-surface)] text-[var(--text-sm)] text-[var(--color-ink-2)] transition-colors hover:bg-[var(--color-surface-hover)] hover:text-[var(--color-ink)] ${FOCUS_RING}`}
+        className={`flex h-11 w-11 items-center justify-center rounded-[var(--radius-md)] border border-[var(--color-line)] bg-[var(--color-surface)] text-[length:var(--text-sm)] text-[var(--color-ink-2)] transition-colors hover:bg-[var(--color-surface-hover)] hover:text-[var(--color-ink)] ${FOCUS_RING}`}
       >
         ?
       </button>
@@ -59,7 +59,7 @@ export function ShortcutsHelp() {
         >
           <div className="w-full max-w-sm animate-pop-in rounded-[var(--radius-lg)] border border-[var(--color-line)] bg-[var(--color-surface-raised)] p-5 shadow-lg">
             <div className="mb-4 flex items-center justify-between">
-              <h2 className="text-[var(--text-base)] font-semibold text-[var(--color-ink)]">
+              <h2 className="text-[length:var(--text-base)] font-semibold text-[var(--color-ink)]">
                 Keyboard shortcuts
               </h2>
               <button
@@ -74,7 +74,7 @@ export function ShortcutsHelp() {
             <ul className="flex flex-col gap-2.5">
               {SHORTCUTS.map((s) => (
                 <li key={s.keys} className="flex items-center justify-between gap-4">
-                  <span className="text-[var(--text-sm)] text-[var(--color-ink-2)]">
+                  <span className="text-[length:var(--text-sm)] text-[var(--color-ink-2)]">
                     {s.description}
                   </span>
                   <Kbd>{s.keys}</Kbd>

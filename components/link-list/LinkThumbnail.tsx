@@ -43,7 +43,7 @@ export function LinkThumbnail({ imageUrl, faviconUrl, host }: LinkThumbnailProps
           ) : (
             <LinkIcon size={26} />
           )}
-          <span className="max-w-full truncate font-mono text-[var(--text-xs)]">{host}</span>
+          <span className="max-w-full truncate font-mono text-[length:var(--text-xs)]">{host}</span>
         </div>
       )}
     </div>

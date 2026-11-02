@@ -29,7 +29,7 @@ interface MenuProps {
   items: MenuItem[];
 }
 
-const ITEM_CLASS = `flex min-h-11 w-full items-center gap-2.5 rounded-[var(--radius-sm)] px-3 py-2 text-left text-[var(--text-sm)] aria-disabled:pointer-events-none aria-disabled:opacity-50 ${FOCUS_RING}`;
+const ITEM_CLASS = `flex min-h-11 w-full items-center gap-2.5 rounded-[var(--radius-sm)] px-3 py-2 text-left text-[length:var(--text-sm)] aria-disabled:pointer-events-none aria-disabled:opacity-50 ${FOCUS_RING}`;
 
 export function Menu({ label, trigger, items }: MenuProps) {
   const [open, setOpen] = useState(false);

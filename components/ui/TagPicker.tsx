@@ -83,14 +83,14 @@ export function TagPicker({ availableTags, selected, onChange }: TagPickerProps)
             <span
               key={tag}
               style={{ background: color.bg, borderColor: color.border, color: color.text }}
-              className="flex items-center gap-1 rounded-[var(--radius-full)] border py-0.5 pr-1 pl-2 text-[var(--text-2xs)] font-medium"
+              className="flex items-center gap-1 rounded-[var(--radius-full)] border py-0.5 pr-1 pl-2 text-[length:var(--text-2xs)] font-medium"
             >
               {tag}
               <button
                 type="button"
                 onClick={() => removeTag(tag)}
                 aria-label={`Remove ${tag}`}
-                className="flex h-3.5 w-3.5 items-center justify-center rounded-full hover:bg-black/10"
+                className="flex h-11 w-11 items-center justify-center rounded-full hover:bg-black/10"
               >
                 <XIcon size={9} />
               </button>
@@ -98,6 +98,7 @@ export function TagPicker({ availableTags, selected, onChange }: TagPickerProps)
           );
         })}
         <input
+          aria-label="Add tags"
           ref={inputRef}
           type="text"
           value={input}
@@ -110,7 +111,7 @@ export function TagPicker({ availableTags, selected, onChange }: TagPickerProps)
           onBlur={() => setTimeout(() => setOpen(false), 100)}
           onKeyDown={handleKeyDown}
           placeholder={selected.length === 0 ? "Add tags" : ""}
-          className="min-w-[6rem] flex-1 bg-transparent text-[var(--text-xs)] text-[var(--color-ink)] outline-none placeholder:text-[var(--color-ink-3)]"
+          className="min-h-11 min-w-[6rem] flex-1 bg-transparent text-[length:var(--text-sm)] text-[var(--color-ink)] outline-none placeholder:text-[var(--color-ink-3)]"
         />
       </div>
 
@@ -126,7 +127,7 @@ export function TagPicker({ availableTags, selected, onChange }: TagPickerProps)
                   onClick={() => addTag(tag)}
                   onMouseEnter={() => setHighlight(i)}
                   style={i === highlight ? { background: color.bg, color: color.text } : undefined}
-                  className={`w-full px-3 py-1.5 text-left text-[var(--text-xs)] ${
+                  className={`min-h-11 w-full px-3 py-1.5 text-left text-[length:var(--text-sm)] ${
                     i === highlight ? "" : "text-[var(--color-ink-2)]"
                   }`}
                 >

@@ -17,7 +17,7 @@ export function AppHeader({ totalLinks, menuItems, onAdd }: AppHeaderProps) {
       <div className="mx-auto flex min-h-24 w-full max-w-[var(--container-wide)] flex-wrap items-center justify-between gap-3 px-5 py-5 sm:px-8">
         <div className="flex min-w-0 items-baseline gap-4">
           <span className="font-display text-3xl text-[var(--color-ink)]">Indexio<span className="text-[var(--color-accent)]">.</span></span>
-          <span className="hidden font-mono text-[var(--text-xs)] text-[var(--color-ink-3)] sm:inline">A personal link index</span>
+          <span className="hidden font-mono text-[length:var(--text-xs)] text-[var(--color-ink-3)] sm:inline">A personal link index</span>
           <span className="sr-only">{totalLinks} links</span>
         </div>
         <div className="flex shrink-0 items-center gap-2">

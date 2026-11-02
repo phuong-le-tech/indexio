@@ -43,7 +43,7 @@ export function TagFilter({ tags, activeTag, onSelect, totalCount }: TagFilterPr
         <button
           type="button"
           onClick={() => setShowAll(true)}
-          className={`shrink-0 rounded-[var(--radius-sm)] px-1 text-[var(--text-xs)] whitespace-nowrap text-[var(--color-ink-3)] underline decoration-dotted underline-offset-2 hover:text-[var(--color-ink)] ${FOCUS_RING}`}
+          className={`min-h-11 shrink-0 rounded-[var(--radius-sm)] px-2 text-[length:var(--text-xs)] whitespace-nowrap text-[var(--color-ink-3)] underline decoration-dotted underline-offset-2 hover:text-[var(--color-ink)] ${FOCUS_RING}`}
         >
           +{hiddenCount} more
         </button>
@@ -52,7 +52,7 @@ export function TagFilter({ tags, activeTag, onSelect, totalCount }: TagFilterPr
         <button
           type="button"
           onClick={() => setShowAll(false)}
-          className={`shrink-0 rounded-[var(--radius-sm)] px-1 text-[var(--text-xs)] whitespace-nowrap text-[var(--color-ink-3)] underline decoration-dotted underline-offset-2 hover:text-[var(--color-ink)] ${FOCUS_RING}`}
+          className={`min-h-11 shrink-0 rounded-[var(--radius-sm)] px-2 text-[length:var(--text-xs)] whitespace-nowrap text-[var(--color-ink-3)] underline decoration-dotted underline-offset-2 hover:text-[var(--color-ink)] ${FOCUS_RING}`}
         >
           Show less
         </button>
@@ -80,7 +80,7 @@ function Pill({ label, count, active, onClick, color }: PillProps) {
           : undefined
       }
       aria-pressed={active}
-      className={`flex min-h-11 shrink-0 items-center gap-2 rounded-[var(--radius-sm)] border px-3 py-1.5 text-[var(--text-xs)] whitespace-nowrap transition-colors ${FOCUS_RING} ${
+      className={`flex min-h-11 shrink-0 items-center gap-2 rounded-[var(--radius-sm)] border px-3 py-1.5 text-[length:var(--text-xs)] whitespace-nowrap transition-colors ${FOCUS_RING} ${
         active
           ? color
             ? "font-medium focus-visible:border-[var(--color-accent)]"
@@ -96,7 +96,7 @@ function Pill({ label, count, active, onClick, color }: PillProps) {
         />
       )}
       <span>{label}</span>
-      <span className="font-mono text-[var(--text-2xs)] opacity-75">{count}</span>
+      <span className="font-mono text-[length:var(--text-2xs)] opacity-75">{count}</span>
     </button>
   );
 }

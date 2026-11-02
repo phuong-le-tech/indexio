@@ -81,14 +81,14 @@ function ToastCard({ toast, onDismiss }: { toast: ToastItem; onDismiss: () => vo
           {isError ? <AlertIcon size={16} /> : <CheckIcon size={16} />}
         </span>
       )}
-      <p className="min-w-0 flex-1 text-[var(--text-sm)] leading-snug break-words text-[var(--color-ink)]">
+      <p className="min-w-0 flex-1 text-[length:var(--text-sm)] leading-snug break-words text-[var(--color-ink)]">
         {toast.message}
       </p>
       <button
         type="button"
         onClick={onDismiss}
         aria-label="Dismiss notification"
-        className={`flex h-6 w-6 shrink-0 items-center justify-center rounded-[var(--radius-sm)] text-[var(--color-ink-3)] hover:bg-[var(--color-surface-hover)] hover:text-[var(--color-ink)] ${FOCUS_RING}`}
+        className={`flex h-11 w-11 shrink-0 items-center justify-center rounded-[var(--radius-sm)] text-[var(--color-ink-3)] hover:bg-[var(--color-surface-hover)] hover:text-[var(--color-ink)] ${FOCUS_RING}`}
       >
         <XIcon size={14} />
       </button>

@@ -41,7 +41,7 @@ export function SearchBar({ value, onChange, totalCount, resultCount }: SearchBa
       className={`flex h-14 items-center gap-3 rounded-[var(--radius-sm)] border bg-[var(--color-surface)] px-4 transition-[border-color,box-shadow] sm:px-5 ${
         focused
           ? "border-[var(--color-accent)] ring-[3px] ring-[var(--color-focus)]"
-          : "border-[var(--color-line)] hover:border-[var(--color-line-strong)]"
+          : "border-[var(--color-line-strong)] hover:border-[var(--color-accent)]"
       }`}
     >
       <SearchIcon
@@ -57,13 +57,13 @@ export function SearchBar({ value, onChange, totalCount, resultCount }: SearchBa
         onBlur={() => setFocused(false)}
         aria-label="Search links"
         placeholder={`Search ${totalCount} link${totalCount === 1 ? "" : "s"}`}
-        className="min-w-0 flex-1 bg-transparent text-[var(--text-base)] text-[var(--color-ink)] outline-none placeholder:text-[var(--color-ink-3)]"
+        className="h-full min-w-0 flex-1 bg-transparent text-[length:var(--text-base)] text-[var(--color-ink)] outline-none placeholder:text-[var(--color-ink-3)]"
       />
       {showResult && (
         <div className="flex shrink-0 items-center gap-2">
           <span
             role="status"
-            className="font-mono text-[var(--text-xs)] text-[var(--color-ink-3)]"
+            className="font-mono text-[length:var(--text-xs)] text-[var(--color-ink-3)]"
           >
             {resultCount} result{resultCount === 1 ? "" : "s"}
           </span>

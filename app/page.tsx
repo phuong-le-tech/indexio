@@ -338,9 +338,9 @@ function HomePageContent() {
         <div>
           <p className="eyebrow mb-3">Your personal catalogue</p>
           <h1 className="font-display text-5xl sm:text-6xl">The library</h1>
-          <p className="mt-3 text-[var(--text-sm)] text-[var(--color-ink-2)]">Good finds. Kept in good company.</p>
+          <p className="mt-3 text-[length:var(--text-sm)] text-[var(--color-ink-2)]">Good finds. Kept in good company.</p>
         </div>
-        <span className="hidden pb-1 font-mono text-[var(--text-xs)] text-[var(--color-ink-3)] sm:block">{String(totalLinks).padStart(2, "0")} saved links</span>
+        <span className="hidden pb-1 font-mono text-[length:var(--text-xs)] text-[var(--color-ink-3)] sm:block">{String(totalLinks).padStart(2, "0")} saved links</span>
       </div>
       <div className="mb-6 grid gap-4 md:grid-cols-2">
         <div className="min-w-0">
@@ -398,20 +398,26 @@ function HomePageContent() {
       )}
 
       {linksLoadFailed && (
-        <p className="mb-3 text-[var(--text-xs)] text-[var(--color-danger)]">Could not load links.</p>
+        <EmptyState
+          icon={<ActivityIcon size={24} />}
+          title="Could not load your library"
+          description="Your links have not been changed. Check your connection and try again."
+          actionLabel="Retry"
+          onAction={() => { setLoading(true); void loadLinks(); }}
+        />
       )}
 
       {importMessage && (
-        <p className="mb-3 text-[var(--text-xs)] text-[var(--color-ink-2)]">{importMessage}</p>
+        <p className="mb-3 text-[length:var(--text-xs)] text-[var(--color-ink-2)]">{importMessage}</p>
       )}
 
       {brokenIds.size > 0 && (
-        <p className="mb-3 text-[var(--text-xs)] text-[var(--color-danger)]">
+        <p className="mb-3 text-[length:var(--text-xs)] text-[var(--color-danger)]">
           {brokenIds.size} link{brokenIds.size === 1 ? "" : "s"} unreachable - flagged below.
         </p>
       )}
 
-      {!loading && links.length > 0 && (
+      {!loading && !linksLoadFailed && links.length > 0 && (
         <LinkList
           links={links}
           onDeleted={handleChanged}

@@ -162,7 +162,7 @@ function LinkCard({
         />
       )}
 
-      <div className="pointer-events-none relative z-[1] w-7 shrink-0 pt-1 font-mono text-[var(--text-xs)] text-[var(--color-ink-3)] sm:w-10">
+      <div className="pointer-events-none relative z-[1] w-7 shrink-0 pt-1 font-mono text-[length:var(--text-xs)] text-[var(--color-ink-3)] sm:w-10">
         {String(index).padStart(2, "0")}
         {selectionMode && (
           <span
@@ -178,7 +178,7 @@ function LinkCard({
       </div>
 
       <div className="pointer-events-none relative z-[1] flex min-w-0 flex-1 flex-col">
-        <p className="flex flex-wrap items-center gap-2 font-mono text-[var(--text-xs)] text-[var(--color-ink-3)]">
+        <p className="flex flex-wrap items-center gap-2 font-mono text-[length:var(--text-xs)] text-[var(--color-ink-3)]">
           {link.favicon_url && !faviconFailed ? (
             // eslint-disable-next-line @next/next/no-img-element -- tiny remote favicon
             <img
@@ -197,7 +197,7 @@ function LinkCard({
           <span aria-hidden="true">·</span>
           <span className="shrink-0">{relativeTime(link.created_at)}</span>
           {broken && (
-            <span className="shrink-0 rounded-[var(--radius-sm)] bg-[var(--color-danger-bg)] px-1.5 py-0.5 text-[var(--text-2xs)] text-[var(--color-danger)]">
+            <span className="shrink-0 rounded-[var(--radius-sm)] bg-[var(--color-danger-bg)] px-1.5 py-0.5 text-[length:var(--text-2xs)] text-[var(--color-danger)]">
               unreachable
             </span>
           )}
@@ -207,20 +207,20 @@ function LinkCard({
           className={`mt-2 line-clamp-2 leading-snug break-words ${
             link.title
               ? "font-display text-2xl text-[var(--color-ink)] sm:text-[1.75rem]"
-              : "font-mono text-[var(--text-base)] text-[var(--color-ink)]"
+              : "font-mono text-[length:var(--text-base)] text-[var(--color-ink)]"
           }`}
         >
           {displayTitle}
         </p>
 
         {link.description && (
-          <p className="mt-1.5 line-clamp-2 text-[var(--text-sm)] leading-relaxed text-[var(--color-ink-2)]">
+          <p className="mt-1.5 line-clamp-2 text-[length:var(--text-sm)] leading-relaxed text-[var(--color-ink-2)]">
             {link.description}
           </p>
         )}
 
         {link.notes && !editing && (
-          <p className="mt-2 line-clamp-2 text-[var(--text-sm)] italic leading-relaxed text-[var(--color-ink-2)]">
+          <p className="mt-2 line-clamp-2 text-[length:var(--text-sm)] italic leading-relaxed text-[var(--color-ink-2)]">
             {link.notes}
           </p>
         )}
@@ -235,7 +235,7 @@ function LinkCard({
                 return (
                   <span
                     key={tag}
-                    className="flex max-w-full items-center gap-1.5 break-words text-[var(--text-xs)] text-[var(--color-ink-2)]"
+                    className="flex max-w-full items-center gap-1.5 break-words text-[length:var(--text-xs)] text-[var(--color-ink-2)]"
                   >
                     <span aria-hidden="true" className="h-1.5 w-1.5 shrink-0 rounded-full" style={{ background: color.text }} />
                     {tag}
@@ -322,7 +322,7 @@ function EditFields({ link, onSaved, onCancel }: EditFieldsProps) {
         onChange={(e) => setNotes(e.target.value)}
         placeholder="Notes"
         rows={2}
-        className="w-full rounded-[var(--radius-sm)] border border-[var(--color-hairline)] bg-[var(--color-inset)] px-3 py-1.5 text-[var(--text-sm)] text-[var(--color-ink)] outline-none focus:border-[var(--color-accent)]"
+        className="w-full rounded-[var(--radius-sm)] border border-[var(--color-hairline)] bg-[var(--color-inset)] px-3 py-1.5 text-[length:var(--text-sm)] text-[var(--color-ink)] outline-none focus:border-[var(--color-accent)]"
       />
       <input
         aria-label="Link tags"
@@ -330,7 +330,7 @@ function EditFields({ link, onSaved, onCancel }: EditFieldsProps) {
         value={tags}
         onChange={(e) => setTags(e.target.value)}
         placeholder="tags, comma, separated"
-        className="w-full rounded-[var(--radius-sm)] border border-[var(--color-hairline)] bg-[var(--color-inset)] px-3 py-1.5 text-[var(--text-xs)] text-[var(--color-ink)] outline-none focus:border-[var(--color-accent)]"
+        className="min-h-11 w-full rounded-[var(--radius-sm)] border border-[var(--color-hairline)] bg-[var(--color-inset)] px-3 py-1.5 text-[length:var(--text-base)] text-[var(--color-ink)] outline-none focus:border-[var(--color-accent)]"
       />
       <div className="flex gap-2">
         <Button variant="primary" size="sm" onClick={handleSave} disabled={saving}>
@@ -340,7 +340,7 @@ function EditFields({ link, onSaved, onCancel }: EditFieldsProps) {
           Cancel
         </Button>
       </div>
-      {error && <p className="text-[var(--text-xs)] text-[var(--color-danger)]">{error}</p>}
+      {error && <p className="text-[length:var(--text-xs)] text-[var(--color-danger)]">{error}</p>}
     </div>
   );
 }
