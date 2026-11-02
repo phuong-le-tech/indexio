@@ -3,11 +3,13 @@
 import { Button } from "@/components/ui/Button";
 import { FOCUS_RING } from "@/components/ui/styles";
 import { XIcon } from "@/components/ui/Icon";
+import { TagPicker } from "@/components/ui/TagPicker";
 
 interface BulkBarProps {
   selectedCount: number;
-  tagInput: string;
-  onTagInputChange: (value: string) => void;
+  availableTags: string[];
+  tags: string[];
+  onTagsChange: (value: string[]) => void;
   onAddTag: () => void;
   deleteArmed: boolean;
   onDelete: () => void;
@@ -17,8 +19,9 @@ interface BulkBarProps {
 
 export function BulkBar({
   selectedCount,
-  tagInput,
-  onTagInputChange,
+  availableTags,
+  tags,
+  onTagsChange,
   onAddTag,
   deleteArmed,
   onDelete,
@@ -45,24 +48,16 @@ export function BulkBar({
             e.preventDefault();
             onAddTag();
           }}
-          className="flex min-w-0 basis-full items-center gap-2 sm:basis-auto"
+          className="flex w-full min-w-0 basis-full items-center gap-2"
         >
-          <input
-            type="text"
-            value={tagInput}
-            onChange={(e) => onTagInputChange(e.target.value)}
-            placeholder="Add tag to selected…"
-            aria-label="Tag to add to selected links"
-            disabled={nothingSelected || busy}
-            className="h-11 min-w-0 flex-1 rounded-[var(--radius-sm)] border border-[var(--color-line)] bg-[var(--color-inset)] px-2.5 text-[length:var(--text-xs)] text-[var(--color-ink)] outline-none placeholder:text-[var(--color-ink-3)] focus:border-[var(--color-accent)] disabled:opacity-50 sm:w-44 sm:flex-none"
-          />
+          <div className="min-w-0 flex-1"><TagPicker availableTags={availableTags} selected={tags} onChange={onTagsChange} disabled={nothingSelected || busy} /></div>
           <Button
             type="submit"
             variant="secondary"
             size="sm"
-            disabled={!tagInput.trim() || nothingSelected || busy}
+            disabled={!tags.length || nothingSelected || busy}
           >
-            Add tag
+            Add tags
           </Button>
         </form>
         <Button

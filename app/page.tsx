@@ -54,7 +54,7 @@ function HomePageContent() {
   const [loadingMore, setLoadingMore] = useState(false);
   const [selectionMode, setSelectionMode] = useState(false);
   const [selectedIds, setSelectedIds] = useState<Set<number>>(new Set());
-  const [bulkTagInput, setBulkTagInput] = useState("");
+  const [bulkTags, setBulkTags] = useState<string[]>([]);
   const [bulkDeleteArmed, setBulkDeleteArmed] = useState(false);
   const [bulkBusy, setBulkBusy] = useState(false);
   const [brokenIds, setBrokenIds] = useState<Set<number>>(new Set());
@@ -161,7 +161,7 @@ function HomePageContent() {
   function toggleSelectionMode() {
     setSelectionMode((prev) => !prev);
     setSelectedIds(new Set());
-    setBulkTagInput("");
+    setBulkTags([]);
     setBulkDeleteArmed(false);
   }
 
@@ -215,14 +215,20 @@ function HomePageContent() {
   }
 
   async function handleBulkAddTag() {
-    const tag = bulkTagInput.trim();
-    if (!tag || selectedIds.size === 0) return;
-    const ok = await runBulkAction(
-      { ids: Array.from(selectedIds), action: "add_tag", tag },
-      "Failed to add tag"
-    );
-    if (!ok) return;
-    setBulkTagInput("");
+    if (!bulkTags.length || selectedIds.size === 0 || bulkBusy) return;
+    // The existing bulk endpoint accepts one tag; retain failed/unattempted tags for retry.
+    for (let index = 0; index < bulkTags.length; index++) {
+      const ok = await runBulkAction(
+        { ids: Array.from(selectedIds), action: "add_tag", tag: bulkTags[index] },
+        "Failed to add tag"
+      );
+      if (!ok) {
+        setBulkTags(bulkTags.slice(index));
+        handleChanged();
+        return;
+      }
+    }
+    setBulkTags([]);
     handleChanged();
   }
 
@@ -427,6 +433,8 @@ function HomePageContent() {
       {!loading && !linksLoadFailed && links.length > 0 && (
         <LinkList
           links={links}
+          availableTags={tags.map((tag) => tag.name)}
+          onUpdate={(updated) => setLinks((current) => current.map((link) => link.id === updated.id ? updated : link))}
           onDeleted={handleChanged}
           hasMore={hasMore}
           loadingMore={loadingMore}
@@ -444,8 +452,9 @@ function HomePageContent() {
     {selectionMode && (
       <BulkBar
         selectedCount={selectedIds.size}
-        tagInput={bulkTagInput}
-        onTagInputChange={setBulkTagInput}
+        availableTags={tags.map((tag) => tag.name)}
+        tags={bulkTags}
+        onTagsChange={setBulkTags}
         onAddTag={handleBulkAddTag}
         deleteArmed={bulkDeleteArmed}
         onDelete={handleBulkDelete}

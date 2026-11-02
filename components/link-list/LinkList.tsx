@@ -5,11 +5,15 @@ import { LinkThumbnail } from "@/components/link-list/LinkThumbnail";
 import { Button } from "@/components/ui/Button";
 import { CheckIcon, LinkIcon, PencilIcon, TrashIcon } from "@/components/ui/Icon";
 import { Menu } from "@/components/ui/Menu";
+import { TagPicker } from "@/components/ui/TagPicker";
+import { useToast } from "@/components/ui/Toast";
 import { hostname, relativeTime } from "@/lib/format";
 import { getTagColor } from "@/lib/tagColors";
 import type { Link } from "@/lib/types";
 
 interface LinkListProps {
+  availableTags: string[];
+  onUpdate: (link: Link) => void;
   links: Link[];
   onDeleted: () => void;
   hasMore?: boolean;
@@ -22,6 +26,8 @@ interface LinkListProps {
 }
 
 export function LinkList({
+  availableTags,
+  onUpdate,
   links,
   onDeleted,
   hasMore,
@@ -34,6 +40,7 @@ export function LinkList({
 }: LinkListProps) {
   const [deletingIds, setDeletingIds] = useState<Set<number>>(new Set());
   const [editingId, setEditingId] = useState<number | null>(null);
+  const [tagsOnly, setTagsOnly] = useState(false);
 
   async function handleDelete(id: number) {
     setDeletingIds((prev) => new Set(prev).add(id));
@@ -70,13 +77,17 @@ export function LinkList({
             key={link.id}
             index={index + 1}
             link={link}
+            availableTags={availableTags}
+            tagsOnly={tagsOnly}
+            onUpdate={onUpdate}
+            onEditTags={() => { setTagsOnly(true); setEditingId(link.id); }}
             deleting={deletingIds.has(link.id)}
             editing={!selectionMode && editingId === link.id}
             selectionMode={Boolean(selectionMode)}
             selected={selectedIds?.has(link.id) ?? false}
             onToggleSelect={() => onToggleSelect?.(link.id)}
             broken={brokenIds?.has(link.id) ?? false}
-            onEdit={() => setEditingId(link.id)}
+            onEdit={() => { setTagsOnly(false); setEditingId(link.id); }}
             onCancelEdit={() => setEditingId(null)}
             onSaved={() => {
               setEditingId(null);
@@ -98,6 +109,10 @@ export function LinkList({
 }
 
 interface LinkCardProps {
+  availableTags: string[];
+  tagsOnly: boolean;
+  onUpdate: (link: Link) => void;
+  onEditTags: () => void;
   index: number;
   link: Link;
   deleting: boolean;
@@ -113,6 +128,10 @@ interface LinkCardProps {
 }
 
 function LinkCard({
+  availableTags,
+  tagsOnly,
+  onUpdate,
+  onEditTags,
   index,
   link,
   deleting,
@@ -226,7 +245,7 @@ function LinkCard({
         )}
 
         {editing ? (
-          <EditFields link={link} onSaved={onSaved} onCancel={onCancelEdit} />
+          <EditFields link={link} availableTags={availableTags} tagsOnly={tagsOnly} onUpdate={onUpdate} onSaved={onSaved} onCancel={onCancelEdit} />
         ) : (
           link.tags.length > 0 && (
             <div className="flex flex-wrap gap-2 overflow-hidden pt-3">
@@ -258,6 +277,7 @@ function LinkCard({
         <div className="absolute right-3 top-3 z-[2]">
           <Menu label={`Actions for ${displayTitle}`} trigger={<span aria-hidden="true">···</span>} items={[
             { label: "Edit link", icon: <PencilIcon size={15} />, onSelect: onEdit },
+            { label: "Edit tags", onSelect: onEditTags },
             { label: "Delete", icon: <TrashIcon size={15} />, danger: true, onSelect: onDelete },
           ]} />
         </div>
@@ -267,34 +287,40 @@ function LinkCard({
 }
 
 interface EditFieldsProps {
+  availableTags: string[];
+  tagsOnly: boolean;
+  onUpdate: (link: Link) => void;
   link: Link;
   onSaved: () => void;
   onCancel: () => void;
 }
 
-function EditFields({ link, onSaved, onCancel }: EditFieldsProps) {
+function EditFields({ link, availableTags, tagsOnly, onUpdate, onSaved, onCancel }: EditFieldsProps) {
   const [notes, setNotes] = useState(link.notes || "");
-  const [tags, setTags] = useState(link.tags.join(", "));
+  const [tags, setTags] = useState(link.tags);
+  const showToast = useToast();
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   async function handleSave() {
+    if (saving) return;
+    const previous = link;
     setSaving(true);
     setError(null);
+    onUpdate({ ...link, tags, notes: tagsOnly ? link.notes : notes });
     try {
       const res = await fetch(`/api/links/${link.id}`, {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          notes,
-          tags: tags
-            .split(",")
-            .map((t) => t.trim())
-            .filter(Boolean),
+          ...(tagsOnly ? {} : { notes }),
+          tags,
         }),
       });
       if (!res.ok) throw new Error(`PATCH /api/links/${link.id} failed with ${res.status}`);
     } catch {
+      onUpdate(previous);
+      showToast("Failed to save changes. Your previous tags were restored.", "error");
       setError("Failed to save changes");
       setSaving(false);
       return;
@@ -305,27 +331,22 @@ function EditFields({ link, onSaved, onCancel }: EditFieldsProps) {
 
   return (
     <div className="pointer-events-auto relative z-[1] mt-3 flex flex-col gap-2">
-      <textarea
+      <p className="eyebrow">{tagsOnly ? "Edit tags" : "Edit link"}</p>
+      {!tagsOnly && <textarea
         aria-label="Link notes"
         value={notes}
         onChange={(e) => setNotes(e.target.value)}
         placeholder="Notes"
         rows={2}
         className="w-full rounded-[var(--radius-sm)] border border-[var(--color-hairline)] bg-[var(--color-inset)] px-3 py-1.5 text-[length:var(--text-sm)] text-[var(--color-ink)] outline-none focus:border-[var(--color-accent)]"
-      />
-      <input
-        aria-label="Link tags"
-        type="text"
-        value={tags}
-        onChange={(e) => setTags(e.target.value)}
-        placeholder="tags, comma, separated"
-        className="min-h-11 w-full rounded-[var(--radius-sm)] border border-[var(--color-hairline)] bg-[var(--color-inset)] px-3 py-1.5 text-[length:var(--text-base)] text-[var(--color-ink)] outline-none focus:border-[var(--color-accent)]"
-      />
+        disabled={saving}
+      />}
+      <TagPicker availableTags={availableTags} selected={tags} onChange={setTags} disabled={saving} />
       <div className="flex gap-2">
         <Button variant="primary" size="sm" onClick={handleSave} disabled={saving}>
           {saving ? "Saving…" : "Save"}
         </Button>
-        <Button variant="secondary" size="sm" onClick={onCancel}>
+        <Button variant="secondary" size="sm" onClick={onCancel} disabled={saving}>
           Cancel
         </Button>
       </div>
