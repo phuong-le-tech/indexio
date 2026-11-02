@@ -4,7 +4,7 @@ import { useState } from "react";
 import { LinkThumbnail } from "@/components/link-list/LinkThumbnail";
 import { Button } from "@/components/ui/Button";
 import { CheckIcon, LinkIcon, PencilIcon, TrashIcon } from "@/components/ui/Icon";
-import { FOCUS_RING } from "@/components/ui/styles";
+import { Menu } from "@/components/ui/Menu";
 import { hostname, relativeTime } from "@/lib/format";
 import { getTagColor } from "@/lib/tagColors";
 import type { Link } from "@/lib/types";
@@ -64,7 +64,7 @@ export function LinkList({
 
   return (
     <>
-      <ul aria-label="Saved links" className="border-t border-[var(--color-line-strong)]">
+      <ul aria-label="Saved links" className="catalogue-grid">
         {links.map((link, index) => (
           <LinkCard
             key={link.id}
@@ -132,10 +132,10 @@ function LinkCard({
 
   return (
     <li
-      className={`group relative flex gap-3 border-b px-1 py-6 transition-[background-color,opacity] duration-200 sm:gap-6 sm:px-3 has-[:focus-visible]:ring-[3px] has-[:focus-visible]:ring-[var(--color-focus)] ${
+      className={`group relative flex min-w-0 flex-col gap-3 rounded-[var(--radius-sm)] border p-5 transition-[background-color,opacity] duration-200 has-[:focus-visible]:ring-[3px] has-[:focus-visible]:ring-[var(--color-focus)] ${
         selected
           ? "border-[var(--color-accent)] bg-[var(--color-accent-bg)]"
-          : "border-[var(--color-line)] bg-transparent"
+          : "border-[var(--color-line)] bg-[var(--color-surface)]"
       } ${
         deleting
           ? "scale-[0.98] opacity-40"
@@ -162,7 +162,7 @@ function LinkCard({
         />
       )}
 
-      <div className="pointer-events-none relative z-[1] w-7 shrink-0 pt-1 font-mono text-[length:var(--text-xs)] text-[var(--color-ink-3)] sm:w-10">
+      <div className="pointer-events-none relative z-[1] min-h-11 shrink-0 pt-1 font-mono text-[length:var(--text-xs)] text-[var(--color-ink-3)]">
         {String(index).padStart(2, "0")}
         {selectionMode && (
           <span
@@ -230,7 +230,7 @@ function LinkCard({
         ) : (
           link.tags.length > 0 && (
             <div className="flex flex-wrap gap-2 overflow-hidden pt-3">
-              {link.tags.map((tag) => {
+              {link.tags.slice(0, 3).map((tag) => {
                 const color = getTagColor(tag);
                 return (
                   <span
@@ -238,39 +238,28 @@ function LinkCard({
                     className="flex max-w-full items-center gap-1.5 break-words text-[length:var(--text-xs)] text-[var(--color-ink-2)]"
                   >
                     <span aria-hidden="true" className="h-1.5 w-1.5 shrink-0 rounded-full" style={{ background: color.text }} />
-                    {tag}
+                    <span className="truncate">{tag}</span>
                   </span>
                 );
               })}
+              {link.tags.length > 3 && <span className="text-xs text-[var(--color-ink-3)]">+{link.tags.length - 3}</span>}
             </div>
           )
         )}
       </div>
 
       {link.image_url && !editing && (
-        <div className="pointer-events-none relative z-[1] hidden w-32 shrink-0 self-center overflow-hidden rounded-[var(--radius-sm)] md:block">
+        <div className="pointer-events-none relative z-[1] mt-auto w-full overflow-hidden rounded-[var(--radius-sm)]">
           <LinkThumbnail imageUrl={link.image_url} faviconUrl={link.favicon_url} host={host} />
         </div>
       )}
 
       {!editing && !selectionMode && (
-        <div className="card-actions pointer-events-none relative z-[2] flex shrink-0 flex-col items-center gap-2 sm:flex-row sm:self-start">
-          <button
-            type="button"
-            onClick={onEdit}
-            aria-label="Edit"
-            className={`pointer-events-auto flex h-11 w-11 items-center justify-center rounded-[var(--radius-sm)] text-[var(--color-ink-2)] hover:bg-[var(--color-inset)] hover:text-[var(--color-ink)] ${FOCUS_RING}`}
-          >
-            <PencilIcon size={15} />
-          </button>
-          <button
-            type="button"
-            onClick={onDelete}
-            aria-label="Delete"
-            className={`pointer-events-auto flex h-11 w-11 items-center justify-center rounded-[var(--radius-sm)] text-[var(--color-ink-3)] hover:bg-[var(--color-danger-bg)] hover:text-[var(--color-danger)] ${FOCUS_RING}`}
-          >
-            <TrashIcon size={15} />
-          </button>
+        <div className="absolute right-3 top-3 z-[2]">
+          <Menu label={`Actions for ${displayTitle}`} trigger={<span aria-hidden="true">···</span>} items={[
+            { label: "Edit link", icon: <PencilIcon size={15} />, onSelect: onEdit },
+            { label: "Delete", icon: <TrashIcon size={15} />, danger: true, onSelect: onDelete },
+          ]} />
         </div>
       )}
     </li>

@@ -333,7 +333,7 @@ function HomePageContent() {
         className="hidden"
       />
     <main className={`mx-auto w-full max-w-[var(--container-wide)] px-5 py-8 sm:px-8 sm:py-12 ${selectionMode ? "pb-64 sm:pb-32" : ""}`}>
-      <div className="mx-auto w-full max-w-[var(--container-col)]">
+      <div className="mx-auto w-full min-w-0">
       <div className="mb-8 flex items-end justify-between gap-4 border-b border-[var(--color-line)] pb-6">
         <div>
           <p className="eyebrow mb-3">Your personal catalogue</p>
