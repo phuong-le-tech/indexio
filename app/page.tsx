@@ -54,7 +54,7 @@ function HomePageContent() {
   const [loadingMore, setLoadingMore] = useState(false);
   const [selectionMode, setSelectionMode] = useState(false);
   const [selectedIds, setSelectedIds] = useState<Set<number>>(new Set());
-  const [bulkTagInput, setBulkTagInput] = useState("");
+  const [bulkTags, setBulkTags] = useState<string[]>([]);
   const [bulkDeleteArmed, setBulkDeleteArmed] = useState(false);
   const [bulkBusy, setBulkBusy] = useState(false);
   const [brokenIds, setBrokenIds] = useState<Set<number>>(new Set());
@@ -107,7 +107,7 @@ function HomePageContent() {
       const res = await fetch("/api/tags");
       if (!res.ok) throw new Error(`GET /api/tags failed with ${res.status}`);
       const data = await res.json();
-      const fetched: Tag[] = data.tags || [];
+      const fetched: Tag[] = (data.tags || []).sort((a: Tag, b: Tag) => b.link_count - a.link_count || a.name.localeCompare(b.name));
       setTags(fetched);
       setTagColorOverrides(fetched);
     } catch {
@@ -161,7 +161,7 @@ function HomePageContent() {
   function toggleSelectionMode() {
     setSelectionMode((prev) => !prev);
     setSelectedIds(new Set());
-    setBulkTagInput("");
+    setBulkTags([]);
     setBulkDeleteArmed(false);
   }
 
@@ -215,38 +215,25 @@ function HomePageContent() {
   }
 
   async function handleBulkAddTag() {
-    const tag = bulkTagInput.trim();
-    if (!tag || selectedIds.size === 0) return;
-    const ok = await runBulkAction(
-      { ids: Array.from(selectedIds), action: "add_tag", tag },
-      "Failed to add tag"
-    );
-    if (!ok) return;
-    setBulkTagInput("");
+    if (!bulkTags.length || selectedIds.size === 0 || bulkBusy) return;
+    // The existing bulk endpoint accepts one tag; retain failed/unattempted tags for retry.
+    for (let index = 0; index < bulkTags.length; index++) {
+      const ok = await runBulkAction(
+        { ids: Array.from(selectedIds), action: "add_tag", tag: bulkTags[index] },
+        "Failed to add tag"
+      );
+      if (!ok) {
+        setBulkTags(bulkTags.slice(index));
+        handleChanged();
+        return;
+      }
+    }
+    setBulkTags([]);
     handleChanged();
   }
 
   async function handleCheckLinks() {
     setCheckingLinks(true);
-    const res = await fetch("/api/links/check", { method: "POST" });
-    if (!res.ok) {
-      setCheckingLinks(false);
-      showToast("Could not check links. Try again.", "error");
-      return;
-    }
-    const data = await res.json();
-    const broken = new Set<number>(
-      (data.results || []).filter((r: { ok: boolean }) => !r.ok).map((r: { id: number }) => r.id)
-    );
-    setBrokenIds(broken);
-    setCheckingLinks(false);
-    if (broken.size === 0) {
-      showToast("All links are reachable.", "success");
-    } else {
-      showToast(
-        `${broken.size} link${broken.size === 1 ? "" : "s"} unreachable - flagged below.`,
-        "error"
-      );
     setImportMessage(null);
     try {
       const res = await fetch("/api/links/check", { method: "POST" });
@@ -256,8 +243,10 @@ function HomePageContent() {
         (data.results || []).filter((r: { ok: boolean }) => !r.ok).map((r: { id: number }) => r.id)
       );
       setBrokenIds(broken);
+      const unreachableMessage = `${broken.size} link${broken.size === 1 ? "" : "s"} unreachable - flagged below.`;
+      showToast(broken.size === 0 ? "All links are reachable." : unreachableMessage, broken.size === 0 ? "success" : "error");
     } catch {
-      setImportMessage("Could not check links");
+      showToast("Could not check links. Try again.", "error");
     } finally {
       setCheckingLinks(false);
     }
@@ -271,24 +260,6 @@ function HomePageContent() {
     const format = file.name.toLowerCase().endsWith(".csv") ? "csv" : "json";
 
     setImporting(true);
-    const res = await fetch("/api/links/import", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ format, content }),
-    });
-    const data = await res.json();
-    setImporting(false);
-
-    if (!res.ok) {
-      showToast(data.error || "Import failed", "error");
-      return;
-    }
-
-    showToast(
-      `Imported ${data.imported} link${data.imported === 1 ? "" : "s"}${data.skipped ? `, skipped ${data.skipped}` : ""}`,
-      "success"
-    );
-    handleChanged();
     setImportMessage(null);
     try {
       const content = await file.text();
@@ -300,17 +271,17 @@ function HomePageContent() {
       const data = await res.json();
 
       if (!res.ok) {
-        setImportMessage(data.error || "Import failed");
+        showToast(data.error || "Import failed", "error");
         return;
       }
 
-      setImportMessage(
-        `Imported ${data.imported} link${data.imported === 1 ? "" : "s"}${data.skipped ? `, skipped ${data.skipped}` : ""}`
+      const skippedMessage = data.skipped ? `, skipped ${data.skipped}` : "";
+      showToast(
+        `Imported ${data.imported} link${data.imported === 1 ? "" : "s"}${skippedMessage}`, "success"
       );
       handleChanged();
-      setTimeout(() => setImportMessage(null), 5000);
     } catch {
-      setImportMessage("Import failed");
+      showToast("Import failed", "error");
     } finally {
       setImporting(false);
     }
@@ -369,31 +340,53 @@ function HomePageContent() {
         onChange={handleImportFile}
         className="hidden"
       />
-    <div className={`mx-auto w-full max-w-[var(--container-wide)] px-5 py-8 ${selectionMode ? "pb-32" : ""}`}>
-      <div className="mx-auto w-full max-w-[var(--container-col)]">
-      <div className="mb-6 flex flex-col gap-3">
+    <main className={`mx-auto w-full max-w-[var(--container-wide)] px-5 py-8 sm:px-8 sm:py-12 ${selectionMode ? "pb-64 sm:pb-32" : ""}`}>
+      <div className="mx-auto w-full min-w-0">
+      <div className="mb-8 flex items-end justify-between gap-4 border-b border-[var(--color-line)] pb-6">
+        <div>
+          <p className="eyebrow mb-3">Your personal catalogue</p>
+          <h1 className="font-display text-5xl sm:text-6xl">The library</h1>
+          <p className="mt-3 text-[length:var(--text-sm)] text-[var(--color-ink-2)]">Good finds. Kept in good company.</p>
+        </div>
+        <span className="hidden pb-1 font-mono text-[length:var(--text-xs)] text-[var(--color-ink-3)] sm:block">{String(totalLinks).padStart(2, "0")} saved links</span>
+      </div>
+      <div className="mb-6 grid gap-4 md:grid-cols-2">
+        <div className="min-w-0">
+          <p className="eyebrow mb-2">01 / Find</p>
         <SearchBar
           value={query}
           onChange={setQuery}
           totalCount={totalLinks}
           resultCount={matchCount}
         />
+        </div>
+        <div className="min-w-0">
+          <p className="eyebrow mb-2">02 / Collect</p>
         <LinkForm
           onCreated={handleChanged}
           availableTags={tags.map((t) => t.name)}
           inputRef={addInputRef}
         />
+        </div>
       </div>
 
-      <div className="mb-5 flex items-center gap-3">
-        <div className="min-w-0 flex-1">
-          {tags.length > 0 && (
-            <TagFilter tags={tags} activeTag={activeTag} onSelect={setActiveTag} totalCount={totalLinks} />
-          )}
+      <div className="catalogue-layout">
+        <TagFilter tags={tags} activeTag={activeTag} onSelect={setActiveTag} totalCount={totalLinks} />
+        <section aria-label="Library results" className="min-w-0">
+      <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
+        <div aria-live="polite" aria-atomic="true" className="min-w-0 text-sm text-[var(--color-ink-2)]">
+          {matchCount} result{matchCount === 1 ? "" : "s"}
+          {activeTag && <span className="sr-only"> filtered by tag {activeTag}</span>}
         </div>
         <SortSelect value={sort} onChange={setSort} />
       </div>
-      </div>
+      {hasFilter && (
+        <div className="mb-4 flex min-w-0 flex-wrap items-center gap-2">
+          {activeTag && <button type="button" aria-label={`Remove filter ${activeTag}`} onClick={() => setActiveTag(null)} className="min-h-11 max-w-full truncate rounded border border-[var(--color-accent-line)] bg-[var(--color-accent-bg)] px-3 text-sm text-[var(--color-accent)]">Tag: {activeTag} ×</button>}
+          {query && <button type="button" aria-label="Remove search filter" onClick={() => setQuery("")} className="min-h-11 max-w-full truncate rounded border border-[var(--color-line)] px-3 text-sm">Search: {query} ×</button>}
+          <button type="button" onClick={() => { setQuery(""); setActiveTag(null); }} className="min-h-11 px-2 text-sm underline">Clear all</button>
+        </div>
+      )}
 
       {loading && showSkeleton && <LinkListSkeleton />}
 
@@ -418,31 +411,33 @@ function HomePageContent() {
             setActiveTag(null);
           }}
         />
-        <div className="rounded-[var(--radius-lg)] border border-dashed border-[var(--color-line)] px-5 py-12 text-center">
-          <p className="text-[var(--text-sm)] text-[var(--color-ink-2)]">No matches.</p>
-          <p className="mt-1 text-[var(--text-xs)] text-[var(--color-ink-3)]">
-            Try a different search or clear the active tag.
-          </p>
-        </div>
       )}
 
       {linksLoadFailed && (
-        <p className="mb-3 text-[var(--text-xs)] text-[var(--color-danger)]">Could not load links.</p>
+        <EmptyState
+          icon={<ActivityIcon size={24} />}
+          title="Could not load your library"
+          description="Your links have not been changed. Check your connection and try again."
+          actionLabel="Retry"
+          onAction={() => { setLoading(true); void loadLinks(); }}
+        />
       )}
 
       {importMessage && (
-        <p className="mb-3 text-[var(--text-xs)] text-[var(--color-ink-2)]">{importMessage}</p>
+        <p className="mb-3 text-[length:var(--text-xs)] text-[var(--color-ink-2)]">{importMessage}</p>
       )}
 
       {brokenIds.size > 0 && (
-        <p className="mb-3 text-[var(--text-xs)] text-[var(--color-danger)]">
-          {brokenIds.size} link{brokenIds.size === 1 ? "" : "s"} unreachable — flagged below.
+        <p className="mb-3 text-[length:var(--text-xs)] text-[var(--color-danger)]">
+          {brokenIds.size} link{brokenIds.size === 1 ? "" : "s"} unreachable - flagged below.
         </p>
       )}
 
-      {!loading && links.length > 0 && (
+      {!loading && !linksLoadFailed && links.length > 0 && (
         <LinkList
           links={links}
+          availableTags={tags.map((tag) => tag.name)}
+          onUpdate={(updated) => setLinks((current) => current.map((link) => link.id === updated.id ? updated : link))}
           onDeleted={handleChanged}
           hasMore={hasMore}
           loadingMore={loadingMore}
@@ -453,12 +448,16 @@ function HomePageContent() {
           brokenIds={brokenIds}
         />
       )}
-    </div>
+        </section>
+      </div>
+      </div>
+    </main>
     {selectionMode && (
       <BulkBar
         selectedCount={selectedIds.size}
-        tagInput={bulkTagInput}
-        onTagInputChange={setBulkTagInput}
+        availableTags={tags.map((tag) => tag.name)}
+        tags={bulkTags}
+        onTagsChange={setBulkTags}
         onAddTag={handleBulkAddTag}
         deleteArmed={bulkDeleteArmed}
         onDelete={handleBulkDelete}

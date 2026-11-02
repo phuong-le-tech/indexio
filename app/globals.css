@@ -1,47 +1,47 @@
 @import "tailwindcss";
 
-@theme {
+@theme static {
   --font-sans: "Inter", ui-sans-serif, system-ui;
   --font-mono: "JetBrains Mono", ui-monospace;
 
-  --color-page: #faf8f7;
-  --color-surface: #ffffff;
-  --color-surface-hover: #f5f5f2;
-  --color-inset: #f2f2ef;
-  --color-skeleton: #ededea;
-  --color-hairline: #e8e8e3;
-  --color-line: #deded8;
-  --color-line-strong: #c9c9c1;
-  --color-ink: #16161a;
-  --color-ink-2: #5a5a62;
-  --color-ink-3: #6c6c74;
+  --color-page: #f6f3ec;
+  --color-surface: #fcfaf5;
+  --color-surface-hover: #eeebe3;
+  --color-inset: #eeebe3;
+  --color-skeleton: #e4e0d6;
+  --color-hairline: #dcd8ce;
+  --color-line: #cec9bd;
+  --color-line-strong: #89877d;
+  --color-ink: #242822;
+  --color-ink-2: #53584f;
+  --color-ink-3: #666b61;
   --color-inverse: #ffffff;
-  --color-accent: #a8500b;
-  --color-accent-solid: #b0540c;
-  --color-accent-hover: #8f4309;
-  --color-accent-bg: #f6ebe0;
-  --color-accent-line: #e3c9ae;
+  --color-accent: #244d88;
+  --color-accent-solid: #244d88;
+  --color-accent-hover: #193b6b;
+  --color-accent-bg: #e6ecf4;
+  --color-accent-line: #b5c6dd;
   --color-danger: #a62226;
   --color-danger-bg: #faebeb;
 
-  --text-2xs: 0.6875rem;
+  --text-2xs: 0.75rem;
   --text-xs: 0.75rem;
-  --text-sm: 0.8125rem;
-  --text-base: 0.9375rem;
-  --text-lg: 1.0625rem;
+  --text-sm: 0.875rem;
+  --text-base: 1rem;
+  --text-lg: 1.125rem;
   --text-xl: 1.375rem;
   --text-2xl: 1.875rem;
 
-  --radius-sm: 6px;
-  --radius-md: 10px;
-  --radius-lg: 14px;
+  --radius-sm: 3px;
+  --radius-md: 5px;
+  --radius-lg: 8px;
   --radius-full: 999px;
-  --container-col: 42.5rem;
-  --container-wide: 74rem;
+  --container-col: 62rem;
+  --container-wide: 70rem;
   --ease-out-quint: cubic-bezier(0.16, 1, 0.3, 1);
 
-  --color-surface-raised: #ffffff;
-  --color-focus: rgb(176 84 12 / 0.35);
+  --color-surface-raised: #fcfaf5;
+  --color-focus: rgb(36 77 136 / 0.35);
   --color-scrim: rgb(22 22 26 / 0.45);
   --shadow-sm: 0 1px 2px rgb(22 22 26 / 0.06);
   --shadow-md: 0 4px 12px -2px rgb(22 22 26 / 0.1), 0 2px 4px -2px rgb(22 22 26 / 0.06);
@@ -77,13 +77,13 @@
   --tag-gray-text: #56565e;
   --tag-brown-bg: #f3ebe3;
   --tag-brown-border: #dcc7b0;
-  --tag-brown-text: #8b6446;
+  --tag-brown-text: #805a3d;
   --tag-orange-bg: #fcefdc;
   --tag-orange-border: #f0c89a;
-  --tag-orange-text: #a86413;
+  --tag-orange-text: #965810;
   --tag-yellow-bg: #fbf3d3;
   --tag-yellow-border: #e9d98b;
-  --tag-yellow-text: #8a6d0c;
+  --tag-yellow-text: #7d6209;
   --tag-green-bg: #e6f4e6;
   --tag-green-border: #b8dcb8;
   --tag-green-text: #2f7a3d;
@@ -103,28 +103,28 @@
 
 @media (prefers-color-scheme: dark) {
   :root {
-    --color-page: #0c0c0d;
-    --color-surface: #151517;
-    --color-surface-hover: #1d1d20;
-    --color-inset: #1a1a1c;
+    --color-page: #191c19;
+    --color-surface: #20241f;
+    --color-surface-hover: #2b3029;
+    --color-inset: #262b25;
     --color-skeleton: #1f1f22;
-    --color-hairline: #232327;
-    --color-line: #2b2b30;
-    --color-line-strong: #3a3a41;
+    --color-hairline: #383e35;
+    --color-line: #484f44;
+    --color-line-strong: #6f7869;
     --color-ink: #f3f3f0;
-    --color-ink-2: #9c9ca4;
-    --color-ink-3: #8b8b94;
+    --color-ink-2: #bec3b6;
+    --color-ink-3: #a5ad9e;
     --color-inverse: #0c0c0d;
-    --color-accent: #f2a25c;
-    --color-accent-solid: #f2a25c;
-    --color-accent-hover: #f7b577;
-    --color-accent-bg: #2b1e12;
-    --color-accent-line: #4a3520;
+    --color-accent: #a9c9f5;
+    --color-accent-solid: #a9c9f5;
+    --color-accent-hover: #c5dcfc;
+    --color-accent-bg: #26364b;
+    --color-accent-line: #567196;
     --color-danger: #f08085;
     --color-danger-bg: #2c1517;
 
-    --color-surface-raised: #1d1d20;
-    --color-focus: rgb(242 162 92 / 0.4);
+    --color-surface-raised: #2b3029;
+    --color-focus: rgb(169 201 245 / 0.4);
     --color-scrim: rgb(0 0 0 / 0.6);
     --shadow-sm: 0 1px 2px rgb(0 0 0 / 0.4);
     --shadow-md: 0 4px 12px -2px rgb(0 0 0 / 0.5), 0 2px 4px -2px rgb(0 0 0 / 0.4);
@@ -169,17 +169,54 @@
   }
 }
 
-/* Hover-revealed controls (card edit/delete) have no way to reveal on a
-   touch device, since there is no hover. Keep them always visible there
-   instead of permanently hidden. */
-@media (hover: none) {
-  .card-actions {
-    opacity: 1;
-  }
+.catalogue-layout { display: grid; gap: 1.5rem; }
+
+@media (min-width: 1024px) {
+  .catalogue-layout { grid-template-columns: 11rem minmax(0, 1fr); }
+}
+
+.catalogue-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 1rem;
+}
+
+@media (min-width: 768px) {
+  .catalogue-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}
+
+@media (min-width: 1280px) {
+  .catalogue-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); }
 }
 
 body {
   background: var(--color-page);
   color: var(--color-ink);
   font-family: var(--font-sans);
+  line-height: 1.5;
 }
+
+.font-display {
+  font-family: var(--font-display), Georgia, serif;
+  font-weight: 400;
+  letter-spacing: -0.035em;
+}
+
+.eyebrow {
+  font-family: var(--font-mono);
+  font-size: var(--text-xs);
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--color-ink-3);
+}
+
+:where(button, a, input, textarea, select):focus-visible {
+  outline: 2px solid var(--color-accent);
+  outline-offset: 3px;
+}
+
+button, select, a { -webkit-tap-highlight-color: transparent; }
+button:not(:disabled), select { cursor: pointer; }
+
+@media (prefers-color-scheme: light) { :root { color-scheme: light; } }
+@media (prefers-color-scheme: dark) { :root { color-scheme: dark; } }

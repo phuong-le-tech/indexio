@@ -1,21 +1,21 @@
-const ROWS = 6;
+const ROW_IDS = ["01", "02", "03", "04", "05", "06"];
 
 export function LinkListSkeleton() {
   return (
-    <ul className="grid grid-cols-1 items-stretch gap-5 sm:grid-cols-2 xl:grid-cols-3">
-      {Array.from({ length: ROWS }).map((_, i) => (
-        <li
-          key={i}
-          className="flex animate-pulse flex-col overflow-hidden rounded-[var(--radius-lg)] border border-[var(--color-hairline)] bg-[var(--color-surface)]"
-        >
-          <div className="aspect-video w-full bg-[var(--color-skeleton)]" />
-          <div className="flex flex-col gap-2 p-4">
-            <div className="h-3 w-2/5 rounded-[var(--radius-sm)] bg-[var(--color-skeleton)]" />
-            <div className="h-4 w-4/5 rounded-[var(--radius-sm)] bg-[var(--color-skeleton)]" />
-            <div className="h-3 w-full rounded-[var(--radius-sm)] bg-[var(--color-skeleton)]" />
-          </div>
-        </li>
-      ))}
-    </ul>
+    <div>
+      <output aria-label="Loading links" className="sr-only">Loading your library</output>
+      <ul aria-hidden="true" className="catalogue-grid">
+        {ROW_IDS.map((id) => (
+          <li key={id} className="flex min-h-64 min-w-0 animate-pulse flex-col gap-5 border border-[var(--color-line)] p-5">
+            <span className="w-8 shrink-0 font-mono text-[length:var(--text-xs)] text-[var(--color-ink-3)]">{id}</span>
+            <div className="flex flex-1 flex-col gap-3">
+              <div className="h-3 w-2/5 rounded-[var(--radius-sm)] bg-[var(--color-skeleton)]" />
+              <div className="h-6 w-3/5 rounded-[var(--radius-sm)] bg-[var(--color-skeleton)]" />
+              <div className="h-3 w-4/5 rounded-[var(--radius-sm)] bg-[var(--color-skeleton)]" />
+            </div>
+          </li>
+        ))}
+      </ul>
+    </div>
   );
 }

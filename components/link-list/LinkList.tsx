@@ -1,15 +1,21 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { LinkThumbnail } from "@/components/link-list/LinkThumbnail";
 import { Button } from "@/components/ui/Button";
 import { CheckIcon, LinkIcon, PencilIcon, TrashIcon } from "@/components/ui/Icon";
-import { FOCUS_RING } from "@/components/ui/styles";
+import { Menu } from "@/components/ui/Menu";
+import { TagPicker } from "@/components/ui/TagPicker";
+import { useToast } from "@/components/ui/Toast";
 import { hostname, relativeTime } from "@/lib/format";
 import { getTagColor } from "@/lib/tagColors";
 import type { Link } from "@/lib/types";
 
+const MAX_VISIBLE_TAGS = 3;
+
 interface LinkListProps {
+  availableTags: string[];
+  onUpdate: (link: Link) => void;
   links: Link[];
   onDeleted: () => void;
   hasMore?: boolean;
@@ -22,6 +28,8 @@ interface LinkListProps {
 }
 
 export function LinkList({
+  availableTags,
+  onUpdate,
   links,
   onDeleted,
   hasMore,
@@ -34,6 +42,7 @@ export function LinkList({
 }: LinkListProps) {
   const [deletingIds, setDeletingIds] = useState<Set<number>>(new Set());
   const [editingId, setEditingId] = useState<number | null>(null);
+  const [tagsOnly, setTagsOnly] = useState(false);
 
   async function handleDelete(id: number) {
     setDeletingIds((prev) => new Set(prev).add(id));
@@ -64,21 +73,26 @@ export function LinkList({
 
   return (
     <>
-      <ul className="grid grid-cols-1 items-stretch gap-5 sm:grid-cols-2 xl:grid-cols-3">
-        {links.map((link) => (
+      <ul aria-label="Saved links" className="catalogue-grid">
+        {links.map((link, index) => (
           <LinkCard
             key={link.id}
+            index={index + 1}
             link={link}
+            availableTags={availableTags}
+            tagsOnly={tagsOnly}
+            onUpdate={onUpdate}
+            onEditTags={() => { setTagsOnly(true); setEditingId(link.id); }}
             deleting={deletingIds.has(link.id)}
             editing={!selectionMode && editingId === link.id}
             selectionMode={Boolean(selectionMode)}
             selected={selectedIds?.has(link.id) ?? false}
             onToggleSelect={() => onToggleSelect?.(link.id)}
             broken={brokenIds?.has(link.id) ?? false}
-            onEdit={() => setEditingId(link.id)}
+            onEdit={() => { setTagsOnly(false); setEditingId(link.id); }}
             onCancelEdit={() => setEditingId(null)}
             onSaved={() => {
-              setEditingId(null);
+              setEditingId((current) => current === link.id ? null : current);
               onDeleted();
             }}
             onDelete={() => handleDelete(link.id)}
@@ -97,6 +111,11 @@ export function LinkList({
 }
 
 interface LinkCardProps {
+  availableTags: string[];
+  tagsOnly: boolean;
+  onUpdate: (link: Link) => void;
+  onEditTags: () => void;
+  index: number;
   link: Link;
   deleting: boolean;
   editing: boolean;
@@ -111,6 +130,11 @@ interface LinkCardProps {
 }
 
 function LinkCard({
+  availableTags,
+  tagsOnly,
+  onUpdate,
+  onEditTags,
+  index,
   link,
   deleting,
   editing,
@@ -129,16 +153,16 @@ function LinkCard({
 
   return (
     <li
-      className={`group relative flex flex-col overflow-hidden rounded-[var(--radius-lg)] border shadow-sm transition-[transform,box-shadow,border-color,background-color,opacity] duration-200 has-[:focus-visible]:border-[var(--color-accent)] has-[:focus-visible]:ring-[3px] has-[:focus-visible]:ring-[var(--color-focus)] ${
+      className={`group relative flex min-w-0 flex-col gap-3 rounded-[var(--radius-sm)] border p-5 transition-[background-color,opacity] duration-200 has-[:focus-visible]:ring-[3px] has-[:focus-visible]:ring-[var(--color-focus)] ${
         selected
           ? "border-[var(--color-accent)] bg-[var(--color-accent-bg)]"
-          : "border-[var(--color-hairline)] bg-[var(--color-surface)]"
+          : "border-[var(--color-line)] bg-[var(--color-surface)]"
       } ${
         deleting
           ? "scale-[0.98] opacity-40"
           : selected
             ? ""
-            : "hover:-translate-y-0.5 hover:border-[var(--color-line)] hover:shadow-md"
+            : "hover:bg-[var(--color-surface)]"
       }`}
     >
       {selectionMode ? (
@@ -159,11 +183,11 @@ function LinkCard({
         />
       )}
 
-      <div className="pointer-events-none relative z-[1]">
-        <LinkThumbnail imageUrl={link.image_url} faviconUrl={link.favicon_url} host={host} />
+      <div className="pointer-events-none relative z-[1] min-h-11 shrink-0 pt-1 font-mono text-[length:var(--text-xs)] text-[var(--color-ink-3)]">
+        {String(index).padStart(2, "0")}
         {selectionMode && (
           <span
-            className={`absolute top-3 left-3 flex h-6 w-6 items-center justify-center rounded-[var(--radius-sm)] border shadow-sm ${
+            className={`absolute top-9 left-0 flex h-6 w-6 items-center justify-center rounded-[var(--radius-sm)] border ${
               selected
                 ? "border-[var(--color-accent)] bg-[var(--color-accent-solid)] text-[var(--color-inverse)]"
                 : "border-[var(--color-line-strong)] bg-[var(--color-surface)]"
@@ -174,8 +198,8 @@ function LinkCard({
         )}
       </div>
 
-      <div className="pointer-events-none relative z-[1] flex min-w-0 flex-1 flex-col p-4">
-        <p className="flex items-center gap-2 font-mono text-[var(--text-xs)] text-[var(--color-ink-3)]">
+      <div className="pointer-events-none relative z-[1] flex min-w-0 flex-1 flex-col">
+        <p className="flex flex-wrap items-center gap-2 font-mono text-[length:var(--text-xs)] text-[var(--color-ink-3)]">
           {link.favicon_url && !faviconFailed ? (
             // eslint-disable-next-line @next/next/no-img-element -- tiny remote favicon
             <img
@@ -194,7 +218,7 @@ function LinkCard({
           <span aria-hidden="true">·</span>
           <span className="shrink-0">{relativeTime(link.created_at)}</span>
           {broken && (
-            <span className="shrink-0 rounded-[var(--radius-sm)] bg-[var(--color-danger-bg)] px-1.5 py-0.5 text-[var(--text-2xs)] text-[var(--color-danger)]">
+            <span className="shrink-0 rounded-[var(--radius-sm)] bg-[var(--color-danger-bg)] px-1.5 py-0.5 text-[length:var(--text-2xs)] text-[var(--color-danger)]">
               unreachable
             </span>
           )}
@@ -203,65 +227,61 @@ function LinkCard({
         <p
           className={`mt-2 line-clamp-2 leading-snug break-words ${
             link.title
-              ? "text-[var(--text-lg)] font-semibold text-[var(--color-ink)]"
-              : "font-mono text-[var(--text-base)] text-[var(--color-ink)]"
+              ? "font-display text-2xl text-[var(--color-ink)] sm:text-[1.75rem]"
+              : "font-mono text-[length:var(--text-base)] text-[var(--color-ink)]"
           }`}
         >
           {displayTitle}
         </p>
 
         {link.description && (
-          <p className="mt-1.5 line-clamp-2 text-[var(--text-sm)] leading-relaxed text-[var(--color-ink-2)]">
+          <p className="mt-1.5 line-clamp-2 text-[length:var(--text-sm)] leading-relaxed text-[var(--color-ink-2)]">
             {link.description}
           </p>
         )}
 
         {link.notes && !editing && (
-          <p className="mt-2 line-clamp-2 border-l-2 border-[var(--color-accent-line)] py-0.5 pl-3 text-[var(--text-sm)] leading-relaxed text-[var(--color-ink-2)]">
+          <p className="mt-2 line-clamp-2 text-[length:var(--text-sm)] italic leading-relaxed text-[var(--color-ink-2)]">
             {link.notes}
           </p>
         )}
 
         {editing ? (
-          <EditFields link={link} onSaved={onSaved} onCancel={onCancelEdit} />
+          <EditFields link={link} availableTags={availableTags} tagsOnly={tagsOnly} onUpdate={onUpdate} onSaved={onSaved} onCancel={onCancelEdit} />
         ) : (
           link.tags.length > 0 && (
-            <div className="mt-auto flex flex-wrap gap-1.5 overflow-hidden pt-3">
-              {link.tags.map((tag) => {
+            <div className="flex flex-wrap gap-2 overflow-hidden pt-3">
+              {link.tags.slice(0, MAX_VISIBLE_TAGS).map((tag) => {
                 const color = getTagColor(tag);
                 return (
                   <span
                     key={tag}
-                    style={{ background: color.bg, color: color.text }}
-                    className="rounded-[var(--radius-sm)] px-2 py-0.5 text-[var(--text-2xs)]"
+                    className="flex max-w-full items-center gap-1.5 break-words text-[length:var(--text-xs)] text-[var(--color-ink-2)]"
                   >
-                    {tag}
+                    <span aria-hidden="true" className="h-1.5 w-1.5 shrink-0 rounded-full" style={{ background: color.text }} />
+                    <span className="truncate">{tag}</span>
                   </span>
                 );
               })}
+              {link.tags.length > MAX_VISIBLE_TAGS && <span className="text-xs text-[var(--color-ink-3)]">+{link.tags.length - MAX_VISIBLE_TAGS}</span>}
             </div>
           )
         )}
       </div>
 
+      {link.image_url && !editing && (
+        <div className="pointer-events-none relative z-[1] mt-auto w-full overflow-hidden rounded-[var(--radius-sm)]">
+          <LinkThumbnail imageUrl={link.image_url} faviconUrl={link.favicon_url} host={host} />
+        </div>
+      )}
+
       {!editing && !selectionMode && (
-        <div className="card-actions pointer-events-none absolute top-3 right-3 z-[2] flex shrink-0 items-center gap-1 opacity-0 transition-opacity group-hover:opacity-100 group-focus-within:opacity-100">
-          <button
-            type="button"
-            onClick={onEdit}
-            aria-label="Edit"
-            className={`pointer-events-auto flex h-8 w-8 items-center justify-center rounded-[var(--radius-md)] border border-[var(--color-line)] bg-[var(--color-surface-raised)] text-[var(--color-ink-2)] shadow-sm hover:text-[var(--color-ink)] ${FOCUS_RING}`}
-          >
-            <PencilIcon size={15} />
-          </button>
-          <button
-            type="button"
-            onClick={onDelete}
-            aria-label="Delete"
-            className={`pointer-events-auto flex h-8 w-8 items-center justify-center rounded-[var(--radius-md)] border border-[var(--color-line)] bg-[var(--color-surface-raised)] text-[var(--color-danger)] shadow-sm hover:bg-[var(--color-danger-bg)] ${FOCUS_RING}`}
-          >
-            <TrashIcon size={15} />
-          </button>
+        <div className="absolute right-3 top-3 z-[2]">
+          <Menu label={`Actions for ${displayTitle}`} trigger={<span aria-hidden="true">···</span>} items={[
+            { label: "Edit link", icon: <PencilIcon size={15} />, onSelect: onEdit },
+            { label: "Edit tags", onSelect: onEditTags },
+            { label: "Delete", icon: <TrashIcon size={15} />, danger: true, onSelect: onDelete },
+          ]} />
         </div>
       )}
     </li>
@@ -269,34 +289,51 @@ function LinkCard({
 }
 
 interface EditFieldsProps {
+  availableTags: string[];
+  tagsOnly: boolean;
+  onUpdate: (link: Link) => void;
   link: Link;
   onSaved: () => void;
   onCancel: () => void;
 }
 
-function EditFields({ link, onSaved, onCancel }: EditFieldsProps) {
+function EditFields({ link, availableTags, tagsOnly, onUpdate, onSaved, onCancel }: Readonly<EditFieldsProps>) {
+  const editorRef = useRef<HTMLDivElement>(null);
   const [notes, setNotes] = useState(link.notes || "");
-  const [tags, setTags] = useState(link.tags.join(", "));
+  const [tags, setTags] = useState(link.tags);
+  const showToast = useToast();
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
+  useEffect(() => {
+    const editor = editorRef.current;
+    const card = editor?.closest("li");
+    editor?.querySelector<HTMLElement>("textarea, input")?.focus();
+    return () => { requestAnimationFrame(() => {
+      if (document.activeElement === document.body) card?.querySelector<HTMLButtonElement>('button[aria-haspopup="menu"]')?.focus();
+    }); };
+  }, []);
+
   async function handleSave() {
+    if (saving) return;
+    const previous = link;
     setSaving(true);
     setError(null);
+    onUpdate({ ...link, tags, notes: tagsOnly ? link.notes : notes });
     try {
       const res = await fetch(`/api/links/${link.id}`, {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          notes,
-          tags: tags
-            .split(",")
-            .map((t) => t.trim())
-            .filter(Boolean),
+          ...(tagsOnly ? {} : { notes }),
+          tags,
         }),
       });
       if (!res.ok) throw new Error(`PATCH /api/links/${link.id} failed with ${res.status}`);
     } catch {
+      onUpdate(previous);
+      setTags(previous.tags);
+      showToast("Failed to save changes. Your previous tags were restored.", "error");
       setError("Failed to save changes");
       setSaving(false);
       return;
@@ -306,30 +343,27 @@ function EditFields({ link, onSaved, onCancel }: EditFieldsProps) {
   }
 
   return (
-    <div className="pointer-events-auto relative z-[1] mt-3 flex flex-col gap-2">
-      <textarea
+    <div ref={editorRef} className="pointer-events-auto relative z-[1] mt-3 flex flex-col gap-2">
+      <p className="eyebrow">{tagsOnly ? "Edit tags" : "Edit link"}</p>
+      {!tagsOnly && <textarea
+        aria-label="Link notes"
         value={notes}
         onChange={(e) => setNotes(e.target.value)}
         placeholder="Notes"
         rows={2}
-        className="w-full rounded-[var(--radius-sm)] border border-[var(--color-hairline)] bg-[var(--color-inset)] px-3 py-1.5 text-[var(--text-sm)] text-[var(--color-ink)] outline-none focus:border-[var(--color-accent)]"
-      />
-      <input
-        type="text"
-        value={tags}
-        onChange={(e) => setTags(e.target.value)}
-        placeholder="tags, comma, separated"
-        className="w-full rounded-[var(--radius-sm)] border border-[var(--color-hairline)] bg-[var(--color-inset)] px-3 py-1.5 text-[var(--text-xs)] text-[var(--color-ink)] outline-none focus:border-[var(--color-accent)]"
-      />
+        className="w-full rounded-[var(--radius-sm)] border border-[var(--color-hairline)] bg-[var(--color-inset)] px-3 py-1.5 text-[length:var(--text-sm)] text-[var(--color-ink)] outline-none focus:border-[var(--color-accent)]"
+        disabled={saving}
+      />}
+      <TagPicker availableTags={availableTags} selected={tags} onChange={setTags} disabled={saving} />
       <div className="flex gap-2">
         <Button variant="primary" size="sm" onClick={handleSave} disabled={saving}>
           {saving ? "Saving…" : "Save"}
         </Button>
-        <Button variant="secondary" size="sm" onClick={onCancel}>
+        <Button variant="secondary" size="sm" onClick={onCancel} disabled={saving}>
           Cancel
         </Button>
       </div>
-      {error && <p className="text-[var(--text-xs)] text-[var(--color-danger)]">{error}</p>}
+      {error && <p className="text-[length:var(--text-xs)] text-[var(--color-danger)]">{error}</p>}
     </div>
   );
 }

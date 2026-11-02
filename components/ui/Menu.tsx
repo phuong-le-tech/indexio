@@ -29,7 +29,7 @@ interface MenuProps {
   items: MenuItem[];
 }
 
-const ITEM_CLASS = `flex w-full items-center gap-2.5 rounded-[var(--radius-sm)] px-2.5 py-2 text-left text-[var(--text-sm)] aria-disabled:pointer-events-none aria-disabled:opacity-50 ${FOCUS_RING}`;
+const ITEM_CLASS = `flex min-h-11 w-full items-center gap-2.5 rounded-[var(--radius-sm)] px-3 py-2 text-left text-[length:var(--text-sm)] aria-disabled:pointer-events-none aria-disabled:opacity-50 ${FOCUS_RING}`;
 
 export function Menu({ label, trigger, items }: MenuProps) {
   const [open, setOpen] = useState(false);
@@ -124,7 +124,7 @@ export function Menu({ label, trigger, items }: MenuProps) {
         aria-controls={open ? menuId : undefined}
         onClick={() => setOpen((prev) => !prev)}
         onKeyDown={handleTriggerKeyDown}
-        className={`flex h-9 w-9 items-center justify-center rounded-[var(--radius-md)] border border-[var(--color-line)] bg-[var(--color-surface)] text-[var(--color-ink-2)] shadow-sm transition-colors hover:bg-[var(--color-surface-hover)] hover:text-[var(--color-ink)] aria-expanded:bg-[var(--color-surface-hover)] ${FOCUS_RING}`}
+        className={`flex h-11 w-11 items-center justify-center rounded-[var(--radius-md)] border border-[var(--color-line)] bg-[var(--color-surface)] text-[var(--color-ink-2)] transition-colors hover:bg-[var(--color-surface-hover)] hover:text-[var(--color-ink)] aria-expanded:bg-[var(--color-surface-hover)] ${FOCUS_RING}`}
       >
         {trigger}
       </button>

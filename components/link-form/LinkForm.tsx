@@ -95,10 +95,10 @@ export function LinkForm({ onCreated, availableTags, inputRef }: LinkFormProps) 
       ref={formRef}
       onSubmit={handleSubmit}
       onKeyDown={handleKeyDown}
-      className={`rounded-[var(--radius-lg)] border bg-[var(--color-surface)] shadow-md transition-[border-color,box-shadow] focus-within:ring-[3px] focus-within:ring-[var(--color-focus)] ${
+      className={`rounded-[var(--radius-sm)] border bg-[var(--color-surface)] transition-[border-color,box-shadow] focus-within:ring-[3px] focus-within:ring-[var(--color-focus)] ${
         error
           ? "border-[var(--color-danger)]"
-          : "border-[var(--color-line)] focus-within:border-[var(--color-accent)]"
+          : "border-[var(--color-line-strong)] focus-within:border-[var(--color-accent)]"
       }`}
     >
       <div className="flex h-14 items-center gap-3 pr-2.5 pl-4 sm:pl-5">
@@ -118,12 +118,12 @@ export function LinkForm({ onCreated, availableTags, inputRef }: LinkFormProps) 
           onFocus={() => setExpanded(true)}
           onBlur={collapse}
           placeholder="Paste a URL to save"
-          className="min-w-0 flex-1 bg-transparent text-[var(--text-base)] text-[var(--color-ink)] outline-none placeholder:text-[var(--color-ink-3)] disabled:opacity-60"
+          className="h-full min-w-0 flex-1 bg-transparent text-[length:var(--text-base)] text-[var(--color-ink)] outline-none placeholder:text-[var(--color-ink-3)] disabled:opacity-60"
         />
         {savedFlash ? (
           <span
             role="status"
-            className="flex shrink-0 items-center gap-1.5 px-2 text-[var(--text-sm)] font-medium text-[var(--color-accent)]"
+            className="flex shrink-0 items-center gap-1.5 px-2 text-[length:var(--text-sm)] font-medium text-[var(--color-accent)]"
           >
             <CheckIcon size={16} />
             Saved
@@ -139,7 +139,7 @@ export function LinkForm({ onCreated, availableTags, inputRef }: LinkFormProps) 
       {error && (
         <p
           role="alert"
-          className="flex items-center gap-1.5 px-4 pb-3 text-[var(--text-xs)] text-[var(--color-danger)] sm:px-5"
+          className="flex items-center gap-1.5 px-4 pb-3 text-[length:var(--text-xs)] text-[var(--color-danger)] sm:px-5"
         >
           <AlertIcon size={14} className="shrink-0" />
           {error}
@@ -150,13 +150,14 @@ export function LinkForm({ onCreated, availableTags, inputRef }: LinkFormProps) 
         <div className="flex flex-col gap-2 border-t border-[var(--color-hairline)] px-4 pt-3 pb-3 sm:px-5">
           <TagPicker availableTags={availableTags} selected={selectedTags} onChange={setSelectedTags} />
           <textarea
+            aria-label="Notes (optional)"
             value={notes}
             onChange={(e) => setNotes(e.target.value)}
             placeholder="Notes (optional)"
             rows={2}
-            className="w-full rounded-[var(--radius-sm)] border border-[var(--color-hairline)] bg-[var(--color-inset)] px-3 py-1.5 text-[var(--text-sm)] text-[var(--color-ink)] outline-none placeholder:text-[var(--color-ink-3)] focus:border-[var(--color-accent)]"
+            className="w-full rounded-[var(--radius-sm)] border border-[var(--color-hairline)] bg-[var(--color-inset)] px-3 py-1.5 text-[length:var(--text-sm)] text-[var(--color-ink)] outline-none placeholder:text-[var(--color-ink-3)] focus:border-[var(--color-accent)]"
           />
-          <p className="flex items-center gap-1.5 text-[var(--text-2xs)] text-[var(--color-ink-3)]">
+          <p className="flex items-center gap-1.5 text-[length:var(--text-2xs)] text-[var(--color-ink-3)]">
             <Kbd>⏎</Kbd> to save <Kbd>esc</Kbd> to close
           </p>
         </div>
