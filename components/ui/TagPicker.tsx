@@ -1,6 +1,6 @@
 "use client";
 
-import { useId, useRef, useState } from "react";
+import { useEffect, useId, useRef, useState } from "react";
 import { CheckIcon, XIcon } from "@/components/ui/Icon";
 import { FOCUS_RING } from "@/components/ui/styles";
 
@@ -10,9 +10,10 @@ interface TagPickerProps {
   selected: string[];
   onChange: (tags: string[]) => void;
   disabled?: boolean;
+  above?: boolean;
 }
 
-export function TagPicker({ availableTags, selected, onChange, disabled = false }: TagPickerProps) {
+export function TagPicker({ availableTags, selected, onChange, disabled = false, above = false }: TagPickerProps) {
   const [input, setInput] = useState("");
   const [open, setOpen] = useState(false);
   const [highlight, setHighlight] = useState(0);
@@ -22,8 +23,12 @@ export function TagPicker({ availableTags, selected, onChange, disabled = false 
   const query = input.trim();
   const suggestions = names.filter((tag) => tag.toLowerCase().includes(query.toLowerCase()));
   const canCreate = query !== "" && !names.some((tag) => tag.toLowerCase() === query.toLowerCase());
-  const options = canCreate ? [...suggestions, query] : suggestions;
+  const options = canCreate ? [query, ...suggestions] : suggestions;
   const activeIndex = Math.min(highlight, Math.max(options.length - 1, 0));
+
+  useEffect(() => {
+    if (open) document.getElementById(`${listId}-${activeIndex}`)?.scrollIntoView({ block: "nearest" });
+  }, [open, activeIndex, listId]);
 
   function toggle(name: string) {
     const existing = selected.find((tag) => tag.toLowerCase() === name.toLowerCase());
@@ -34,7 +39,7 @@ export function TagPicker({ availableTags, selected, onChange, disabled = false 
     const name = options[index];
     if (!name || disabled) return;
     toggle(name);
-    if (canCreate && index === options.length - 1) {
+    if (canCreate && index === 0) {
       setInput("");
       setHighlight(0);
     }
@@ -64,10 +69,10 @@ export function TagPicker({ availableTags, selected, onChange, disabled = false 
         }} />
       </div>
       {open && !disabled && (
-        <ul id={listId} role="listbox" aria-label="Tag suggestions" aria-multiselectable="true" className="absolute inset-x-0 top-full z-30 mt-1 max-h-60 overflow-auto rounded-[var(--radius-sm)] border border-[var(--color-line)] bg-[var(--color-surface-raised)] p-1 shadow-lg">
+        <ul id={listId} role="listbox" aria-label="Tag suggestions" aria-multiselectable="true" className={`absolute inset-x-0 z-30 max-h-60 overflow-auto rounded-[var(--radius-sm)] border border-[var(--color-line)] bg-[var(--color-surface-raised)] p-1 shadow-lg ${above ? "bottom-full mb-1" : "top-full mt-1"}`}>
           {options.map((tag, index) => {
             const checked = selected.some((name) => name.toLowerCase() === tag.toLowerCase());
-            const create = canCreate && index === options.length - 1;
+            const create = canCreate && index === 0;
             return <li key={`${tag}-${index}`} id={`${listId}-${index}`} role="option" aria-selected={checked} onPointerDown={(event) => event.preventDefault()} onClick={() => choose(index)} onPointerMove={() => setHighlight(index)} className={`flex min-h-11 cursor-pointer items-center gap-2 rounded px-2 text-sm [overflow-wrap:anywhere] ${index === activeIndex ? "bg-[var(--color-accent-bg)] text-[var(--color-accent)]" : "text-[var(--color-ink)]"}`}>
               <span aria-hidden="true" className="flex h-4 w-4 shrink-0 items-center justify-center rounded border border-current">{checked && <CheckIcon size={12} />}</span>
               <span>{create ? `Create '${tag}'` : tag}</span>

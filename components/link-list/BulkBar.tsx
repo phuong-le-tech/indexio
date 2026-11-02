@@ -50,7 +50,7 @@ export function BulkBar({
           }}
           className="flex w-full min-w-0 basis-full items-center gap-2"
         >
-          <div className="min-w-0 flex-1"><TagPicker availableTags={availableTags} selected={tags} onChange={onTagsChange} disabled={nothingSelected || busy} /></div>
+          <div className="min-w-0 flex-1"><TagPicker above availableTags={availableTags} selected={tags} onChange={onTagsChange} disabled={nothingSelected || busy} /></div>
           <Button
             type="submit"
             variant="secondary"
@@ -72,6 +72,7 @@ export function BulkBar({
           type="button"
           onClick={onCancel}
           aria-label="Cancel selection"
+          disabled={busy}
           className={`flex h-11 w-11 items-center justify-center rounded-[var(--radius-md)] text-[var(--color-ink-3)] hover:bg-[var(--color-surface-hover)] hover:text-[var(--color-ink)] ${FOCUS_RING}`}
         >
           <XIcon size={16} />

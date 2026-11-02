@@ -2,6 +2,7 @@
 
 import { useEffect, useId, useRef, type ReactNode, type RefObject } from "react";
 import { Button } from "@/components/ui/Button";
+import { trapDialogFocus } from "@/components/ui/dialog";
 
 interface ConfirmDialogProps {
   open: boolean;
@@ -56,30 +57,13 @@ export function ConfirmDialog({
         event.preventDefault();
         if (!busy) onCancel();
       }}
-      onKeyDown={(event) => {
-        if (event.key !== "Tab") return;
-        const controls = Array.from(event.currentTarget.querySelectorAll<HTMLElement>(
-          'button:not(:disabled), input:not(:disabled), select:not(:disabled), textarea:not(:disabled), a[href], [tabindex="0"]',
-        )).filter((element) => !element.closest("fieldset:disabled"));
-        const first = controls[0];
-        const last = controls[controls.length - 1];
-        if (!first) {
-          event.preventDefault();
-          event.currentTarget.focus();
-        } else if (event.shiftKey && document.activeElement === first) {
-          event.preventDefault();
-          last.focus();
-        } else if (!event.shiftKey && document.activeElement === last) {
-          event.preventDefault();
-          first.focus();
-        }
-      }}
+      onKeyDown={trapDialogFocus}
       className="fixed inset-0 m-auto max-h-[calc(100dvh-2rem)] w-[calc(100%-2rem)] max-w-lg overflow-y-auto rounded-[var(--radius-lg)] border border-[var(--color-line)] bg-[var(--color-surface)] p-6 text-[var(--color-ink)] shadow-xl backdrop:bg-black/50"
     >
-      <h2 id={titleId} className="break-words text-[var(--text-lg)] font-semibold">{title}</h2>
-      <div id={descriptionId} className="mt-3 break-words text-[var(--text-sm)] text-[var(--color-ink-2)]">{description}</div>
+      <h2 id={titleId} className="break-words text-[length:var(--text-lg)] font-semibold">{title}</h2>
+      <div id={descriptionId} className="mt-3 break-words text-[length:var(--text-sm)] text-[var(--color-ink-2)]">{description}</div>
       {children && <fieldset disabled={busy} className="mt-4 min-w-0">{children}</fieldset>}
-      {error && <p role="alert" className="mt-4 text-[var(--text-sm)] text-[var(--color-danger)]">{error}</p>}
+      {error && <p role="alert" className="mt-4 text-[length:var(--text-sm)] text-[var(--color-danger)]">{error}</p>}
       <div className="mt-6 flex flex-wrap justify-end gap-2">
         <Button ref={cancelRef} onClick={onCancel} disabled={busy}>Cancel</Button>
         <Button variant={danger ? "dangerSolid" : "primary"} onClick={onConfirm} disabled={busy || disabled}>

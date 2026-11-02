@@ -10,7 +10,7 @@ import { FOCUS_RING } from "@/components/ui/styles";
 import { TAG_COLOR_FAMILIES, getFamilyColor, getTagColor, isTagColorFamily, setTagColorOverrides } from "@/lib/tagColors";
 import type { Tag } from "@/lib/types";
 
-const INPUT_CLASS = `min-h-10 min-w-0 rounded-[var(--radius-sm)] border border-[var(--color-line)] bg-[var(--color-inset)] px-3 text-[var(--text-sm)] text-[var(--color-ink)] ${FOCUS_RING}`;
+const INPUT_CLASS = `min-h-10 min-w-0 rounded-[var(--radius-sm)] border border-[var(--color-line)] bg-[var(--color-inset)] px-3 text-[length:var(--text-sm)] text-[var(--color-ink)] ${FOCUS_RING}`;
 
 type TagAction = { type: "delete" | "merge"; tag: Tag };
 
@@ -111,26 +111,26 @@ export default function TagsPage() {
       <h1 className="font-display text-5xl sm:text-6xl">The tag index</h1>
       <p className="mt-3 mb-8 max-w-lg text-sm text-[var(--color-ink-2)]">Small labels. Useful connections. Rename, recolor or bring related tags together.</p>
 
-      <label htmlFor="tag-search" className="mb-2 block text-[var(--text-sm)] font-medium">Search tags</label>
+      <label htmlFor="tag-search" className="mb-2 block text-[length:var(--text-sm)] font-medium">Search tags</label>
       <input ref={searchRef} id="tag-search" type="search" value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Search by name" className={`${INPUT_CLASS} mb-4 w-full`} />
       {loadFailed && (
-        <div role="alert" className="mb-4 text-[var(--text-sm)] text-[var(--color-danger)]">
+        <div role="alert" className="mb-4 text-[length:var(--text-sm)] text-[var(--color-danger)]">
           <p>Could not refresh tags. The list may be out of date.</p>
           <Button size="sm" className="mt-2" onClick={() => void loadTags()} disabled={busy}>Retry</Button>
         </div>
       )}
-      {loading ? <p role="status" className="text-[var(--text-sm)] text-[var(--color-ink-3)]">Loading...</p> : tags.length === 0 && !loadFailed ? (
+      {loading ? <p role="status" className="text-[length:var(--text-sm)] text-[var(--color-ink-3)]">Loading...</p> : tags.length === 0 && !loadFailed ? (
         <div className="flex flex-col items-center rounded-[var(--radius-lg)] border border-dashed border-[var(--color-line)] px-5 py-14 text-center">
           <span className="mb-4 flex h-12 w-12 items-center justify-center rounded-[var(--radius-lg)] bg-[var(--color-accent-bg)] text-[var(--color-accent)]"><TagIcon size={24} /></span>
-          <p className="text-[var(--text-base)] font-semibold text-[var(--color-ink)]">No tags yet</p>
-          <p className="mt-1 text-[var(--text-sm)] text-[var(--color-ink-2)]">Tags you add to links will show up here.</p>
+          <p className="text-[length:var(--text-base)] font-semibold text-[var(--color-ink)]">No tags yet</p>
+          <p className="mt-1 text-[length:var(--text-sm)] text-[var(--color-ink-2)]">Tags you add to links will show up here.</p>
           <Link href="/" className={buttonClasses({ variant: "primary", className: "mt-5" })}>Back to your links</Link>
         </div>
       ) : (
         <>
-          <p role="status" className="mb-3 text-[var(--text-xs)] text-[var(--color-ink-3)]">{filteredTags.length} of {tags.length} tags</p>
-          {filteredTags.length === 0 && tags.length > 0 && <p className="text-[var(--text-sm)] text-[var(--color-ink-2)]">No tags match your search.</p>}
-          <ul className="flex flex-col gap-2">
+          <p role="status" className="mb-3 text-[length:var(--text-xs)] text-[var(--color-ink-3)]">{filteredTags.length} of {tags.length} tags</p>
+          {filteredTags.length === 0 && tags.length > 0 && <p className="text-[length:var(--text-sm)] text-[var(--color-ink-2)]">No tags match your search.</p>}
+          <ul aria-label="Tags" className="flex flex-col gap-2">
             {filteredTags.map((tag) => <TagRow key={tag.id} tag={tag} onChanged={loadTags} onAction={(type) => openAction(type, tag)} canMerge={tags.length > 1} restoreFallback={() => searchRef.current?.focus()} />)}
           </ul>
         </>
@@ -155,7 +155,7 @@ export default function TagsPage() {
       >
         {action?.type === "merge" && !mergeConfirmed && (
           <>
-            <label htmlFor="merge-target" className="mb-2 block text-[var(--text-sm)] font-medium">Merge into</label>
+            <label htmlFor="merge-target" className="mb-2 block text-[length:var(--text-sm)] font-medium">Merge into</label>
             <select id="merge-target" value={mergeTarget} onChange={(event) => setMergeTarget(event.target.value)} className={`${INPUT_CLASS} w-full`}>
               <option value="">Choose a target tag</option>
               {tags.filter((tag) => tag.id !== action.tag.id).map((tag) => <option key={tag.id} value={tag.id}>{tag.name}</option>)}
@@ -236,8 +236,8 @@ function TagRow({ tag, onChanged, onAction, canMerge, restoreFallback }: TagRowP
   return (
     <li ref={rowRef} aria-busy={busy} className="flex min-w-0 flex-wrap items-center gap-3 rounded-[var(--radius-md)] border border-[var(--color-hairline)] bg-[var(--color-surface)] px-4 py-3 shadow-sm">
       <span className="h-3 w-3 shrink-0 rounded-full" style={{ background: color.text }} aria-hidden="true" />
-      <span className="min-w-0 flex-1 break-words text-[var(--text-sm)] font-medium text-[var(--color-ink)]">{tag.name}</span>
-      <span className="shrink-0 font-mono text-[var(--text-2xs)] text-[var(--color-ink-3)]">{tag.link_count} link{tag.link_count === 1 ? "" : "s"}</span>
+      <span className="min-w-0 flex-1 break-words text-[length:var(--text-sm)] font-medium text-[var(--color-ink)]">{tag.name}</span>
+      <span className="shrink-0 font-mono text-[length:var(--text-2xs)] text-[var(--color-ink-3)]">{tag.link_count} link{tag.link_count === 1 ? "" : "s"}</span>
       <Menu label={`Actions for ${tag.name}`} trigger={<span aria-hidden="true">...</span>} items={[
         { label: "Rename", disabled: busy, onSelect: () => startEditing("name") },
         { label: "Change colour", disabled: busy, onSelect: () => startEditing("color") },
@@ -246,7 +246,7 @@ function TagRow({ tag, onChanged, onAction, canMerge, restoreFallback }: TagRowP
       ]} />
       {editing && (
         <form className="flex w-full min-w-0 flex-wrap items-end gap-2 border-t border-[var(--color-hairline)] pt-3" onSubmit={(event) => { event.preventDefault(); void save(); }} onKeyDown={(event) => { if (event.key === "Escape") { event.preventDefault(); cancelEditing(); } }}>
-          <div className="flex min-w-0 flex-1 basis-40 flex-col gap-2 text-[var(--text-xs)] font-medium">
+          <div className="flex min-w-0 flex-1 basis-40 flex-col gap-2 text-[length:var(--text-xs)] font-medium">
             <label htmlFor={`tag-${editing}-${tag.id}`}>{editing === "name" ? "Tag name" : "Tag colour"}</label>
             {editing === "name" ? (
               <input id={`tag-name-${tag.id}`} autoFocus value={name} onChange={(event) => setName(event.target.value)} disabled={busy} aria-invalid={!!error} aria-describedby={error ? `tag-error-${tag.id}` : undefined} className={INPUT_CLASS} />
@@ -261,7 +261,7 @@ function TagRow({ tag, onChanged, onAction, canMerge, restoreFallback }: TagRowP
           <Button onClick={cancelEditing} disabled={busy}>Cancel</Button>
         </form>
       )}
-      {error && <p id={`tag-error-${tag.id}`} role="alert" className="w-full text-[var(--text-xs)] text-[var(--color-danger)]">{error}</p>}
+      {error && <p id={`tag-error-${tag.id}`} role="alert" className="w-full text-[length:var(--text-xs)] text-[var(--color-danger)]">{error}</p>}
     </li>
   );
 }

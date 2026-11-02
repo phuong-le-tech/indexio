@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { LinkThumbnail } from "@/components/link-list/LinkThumbnail";
 import { Button } from "@/components/ui/Button";
 import { CheckIcon, LinkIcon, PencilIcon, TrashIcon } from "@/components/ui/Icon";
@@ -10,6 +10,8 @@ import { useToast } from "@/components/ui/Toast";
 import { hostname, relativeTime } from "@/lib/format";
 import { getTagColor } from "@/lib/tagColors";
 import type { Link } from "@/lib/types";
+
+const MAX_VISIBLE_TAGS = 3;
 
 interface LinkListProps {
   availableTags: string[];
@@ -90,7 +92,7 @@ export function LinkList({
             onEdit={() => { setTagsOnly(false); setEditingId(link.id); }}
             onCancelEdit={() => setEditingId(null)}
             onSaved={() => {
-              setEditingId(null);
+              setEditingId((current) => current === link.id ? null : current);
               onDeleted();
             }}
             onDelete={() => handleDelete(link.id)}
@@ -249,7 +251,7 @@ function LinkCard({
         ) : (
           link.tags.length > 0 && (
             <div className="flex flex-wrap gap-2 overflow-hidden pt-3">
-              {link.tags.slice(0, 3).map((tag) => {
+              {link.tags.slice(0, MAX_VISIBLE_TAGS).map((tag) => {
                 const color = getTagColor(tag);
                 return (
                   <span
@@ -261,7 +263,7 @@ function LinkCard({
                   </span>
                 );
               })}
-              {link.tags.length > 3 && <span className="text-xs text-[var(--color-ink-3)]">+{link.tags.length - 3}</span>}
+              {link.tags.length > MAX_VISIBLE_TAGS && <span className="text-xs text-[var(--color-ink-3)]">+{link.tags.length - MAX_VISIBLE_TAGS}</span>}
             </div>
           )
         )}
@@ -296,11 +298,21 @@ interface EditFieldsProps {
 }
 
 function EditFields({ link, availableTags, tagsOnly, onUpdate, onSaved, onCancel }: EditFieldsProps) {
+  const editorRef = useRef<HTMLDivElement>(null);
   const [notes, setNotes] = useState(link.notes || "");
   const [tags, setTags] = useState(link.tags);
   const showToast = useToast();
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    const editor = editorRef.current;
+    const card = editor?.closest("li");
+    editor?.querySelector<HTMLElement>("textarea, input")?.focus();
+    return () => { requestAnimationFrame(() => {
+      if (document.activeElement === document.body) card?.querySelector<HTMLButtonElement>('button[aria-haspopup="menu"]')?.focus();
+    }); };
+  }, []);
 
   async function handleSave() {
     if (saving) return;
@@ -320,6 +332,7 @@ function EditFields({ link, availableTags, tagsOnly, onUpdate, onSaved, onCancel
       if (!res.ok) throw new Error(`PATCH /api/links/${link.id} failed with ${res.status}`);
     } catch {
       onUpdate(previous);
+      setTags(previous.tags);
       showToast("Failed to save changes. Your previous tags were restored.", "error");
       setError("Failed to save changes");
       setSaving(false);
@@ -330,7 +343,7 @@ function EditFields({ link, availableTags, tagsOnly, onUpdate, onSaved, onCancel
   }
 
   return (
-    <div className="pointer-events-auto relative z-[1] mt-3 flex flex-col gap-2">
+    <div ref={editorRef} className="pointer-events-auto relative z-[1] mt-3 flex flex-col gap-2">
       <p className="eyebrow">{tagsOnly ? "Edit tags" : "Edit link"}</p>
       {!tagsOnly && <textarea
         aria-label="Link notes"

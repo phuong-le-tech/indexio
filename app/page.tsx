@@ -107,7 +107,7 @@ function HomePageContent() {
       const res = await fetch("/api/tags");
       if (!res.ok) throw new Error(`GET /api/tags failed with ${res.status}`);
       const data = await res.json();
-      const fetched: Tag[] = data.tags || [];
+      const fetched: Tag[] = (data.tags || []).sort((a: Tag, b: Tag) => b.link_count - a.link_count || a.name.localeCompare(b.name));
       setTags(fetched);
       setTagColorOverrides(fetched);
     } catch {
@@ -243,7 +243,7 @@ function HomePageContent() {
         (data.results || []).filter((r: { ok: boolean }) => !r.ok).map((r: { id: number }) => r.id)
       );
       setBrokenIds(broken);
-      showToast(broken.size === 0 ? "All links are reachable." : `${broken.size} links unreachable - flagged below.`, broken.size === 0 ? "success" : "error");
+      showToast(broken.size === 0 ? "All links are reachable." : `${broken.size} link${broken.size === 1 ? "" : "s"} unreachable - flagged below.`, broken.size === 0 ? "success" : "error");
     } catch {
       showToast("Could not check links. Try again.", "error");
     } finally {
@@ -374,6 +374,7 @@ function HomePageContent() {
       <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
         <div aria-live="polite" aria-atomic="true" className="min-w-0 text-sm text-[var(--color-ink-2)]">
           {matchCount} result{matchCount === 1 ? "" : "s"}
+          {activeTag && <span className="sr-only"> filtered by tag {activeTag}</span>}
         </div>
         <SortSelect value={sort} onChange={setSort} />
       </div>
