@@ -243,7 +243,8 @@ function HomePageContent() {
         (data.results || []).filter((r: { ok: boolean }) => !r.ok).map((r: { id: number }) => r.id)
       );
       setBrokenIds(broken);
-      showToast(broken.size === 0 ? "All links are reachable." : `${broken.size} link${broken.size === 1 ? "" : "s"} unreachable - flagged below.`, broken.size === 0 ? "success" : "error");
+      const unreachableMessage = `${broken.size} link${broken.size === 1 ? "" : "s"} unreachable - flagged below.`;
+      showToast(broken.size === 0 ? "All links are reachable." : unreachableMessage, broken.size === 0 ? "success" : "error");
     } catch {
       showToast("Could not check links. Try again.", "error");
     } finally {
@@ -274,8 +275,9 @@ function HomePageContent() {
         return;
       }
 
+      const skippedMessage = data.skipped ? `, skipped ${data.skipped}` : "";
       showToast(
-        `Imported ${data.imported} link${data.imported === 1 ? "" : "s"}${data.skipped ? `, skipped ${data.skipped}` : ""}`, "success"
+        `Imported ${data.imported} link${data.imported === 1 ? "" : "s"}${skippedMessage}`, "success"
       );
       handleChanged();
     } catch {

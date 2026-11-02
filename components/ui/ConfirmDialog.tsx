@@ -22,7 +22,7 @@ interface ConfirmDialogProps {
 export function ConfirmDialog({
   open, title, description, children, confirmLabel, onConfirm, onCancel,
   busy = false, disabled = false, danger = false, error, fallbackFocusRef,
-}: ConfirmDialogProps) {
+}: Readonly<ConfirmDialogProps>) {
   const dialogRef = useRef<HTMLDialogElement>(null);
   const cancelRef = useRef<HTMLButtonElement>(null);
   const titleId = useId();

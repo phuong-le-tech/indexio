@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState, type KeyboardEvent, type RefObject } from "react";
 import { TagIcon } from "@/components/ui/Icon";
 import { Button, buttonClasses } from "@/components/ui/Button";
 import { ConfirmDialog } from "@/components/ui/ConfirmDialog";
@@ -13,6 +13,30 @@ import type { Tag } from "@/lib/types";
 const INPUT_CLASS = `min-h-10 min-w-0 rounded-[var(--radius-sm)] border border-[var(--color-line)] bg-[var(--color-inset)] px-3 text-[length:var(--text-sm)] text-[var(--color-ink)] ${FOCUS_RING}`;
 
 type TagAction = { type: "delete" | "merge"; tag: Tag };
+
+function getActionDetails(action: TagAction | null, mergeConfirmed: boolean, target: Tag | undefined) {
+  if (action?.type === "delete") {
+    return {
+      title: "Delete tag?",
+      confirmLabel: "Delete tag",
+      description: <p>Delete &quot;{action.tag.name}&quot; from {action.tag.link_count} link{action.tag.link_count === 1 ? "" : "s"}? The links themselves will not be deleted. This cannot be undone.</p>,
+    };
+  }
+  const title = mergeConfirmed ? "Confirm tag merge" : "Merge tag";
+  const confirmLabel = mergeConfirmed ? "Confirm merge" : "Review merge";
+  if (action && mergeConfirmed && target) {
+    return {
+      title,
+      confirmLabel,
+      description: <p>Merge &quot;{action.tag.name}&quot; into &quot;{target.name}&quot;? This affects {action.tag.link_count} link{action.tag.link_count === 1 ? "" : "s"} currently tagged &quot;{action.tag.name}&quot; and removes the source tag. Links already tagged &quot;{target.name}&quot; keep that tag. This cannot be undone.</p>,
+    };
+  }
+  return {
+    title,
+    confirmLabel,
+    description: <p>Choose the tag that will replace &quot;{action?.tag.name}&quot; on {action?.tag.link_count} link{action?.tag.link_count === 1 ? "" : "s"}. You will review the merge before saving.</p>,
+  };
+}
 
 async function sendTagRequest(url: string, init: RequestInit, fallbackError: string) {
   const res = await fetch(url, init);
@@ -99,8 +123,6 @@ export default function TagsPage() {
     }
   }
 
-  const filteredTags = tags.filter((tag) => tag.name.toLowerCase().includes(query.trim().toLowerCase()));
-
   return (
     <main className="mx-auto w-full max-w-[var(--container-col)] px-5 py-8 sm:px-8 sm:py-12">
       <div className="mb-10 flex items-center justify-between gap-3 border-b border-[var(--color-line)] pb-6">
@@ -119,32 +141,11 @@ export default function TagsPage() {
           <Button size="sm" className="mt-2" onClick={() => void loadTags()} disabled={busy}>Retry</Button>
         </div>
       )}
-      {loading ? <p role="status" className="text-[length:var(--text-sm)] text-[var(--color-ink-3)]">Loading...</p> : tags.length === 0 && !loadFailed ? (
-        <div className="flex flex-col items-center rounded-[var(--radius-lg)] border border-dashed border-[var(--color-line)] px-5 py-14 text-center">
-          <span className="mb-4 flex h-12 w-12 items-center justify-center rounded-[var(--radius-lg)] bg-[var(--color-accent-bg)] text-[var(--color-accent)]"><TagIcon size={24} /></span>
-          <p className="text-[length:var(--text-base)] font-semibold text-[var(--color-ink)]">No tags yet</p>
-          <p className="mt-1 text-[length:var(--text-sm)] text-[var(--color-ink-2)]">Tags you add to links will show up here.</p>
-          <Link href="/" className={buttonClasses({ variant: "primary", className: "mt-5" })}>Back to your links</Link>
-        </div>
-      ) : (
-        <>
-          <p role="status" className="mb-3 text-[length:var(--text-xs)] text-[var(--color-ink-3)]">{filteredTags.length} of {tags.length} tags</p>
-          {filteredTags.length === 0 && tags.length > 0 && <p className="text-[length:var(--text-sm)] text-[var(--color-ink-2)]">No tags match your search.</p>}
-          <ul aria-label="Tags" className="flex flex-col gap-2">
-            {filteredTags.map((tag) => <TagRow key={tag.id} tag={tag} onChanged={loadTags} onAction={(type) => openAction(type, tag)} canMerge={tags.length > 1} restoreFallback={() => searchRef.current?.focus()} />)}
-          </ul>
-        </>
-      )}
+      <TagResults tags={tags} query={query} loading={loading} loadFailed={loadFailed} onChanged={loadTags} onAction={openAction} searchRef={searchRef} />
 
       <ConfirmDialog
         open={action !== null}
-        title={action?.type === "delete" ? "Delete tag?" : mergeConfirmed ? "Confirm tag merge" : "Merge tag"}
-        description={action?.type === "delete" ? (
-          <p>Delete &quot;{action.tag.name}&quot; from {action.tag.link_count} link{action.tag.link_count === 1 ? "" : "s"}? The links themselves will not be deleted. This cannot be undone.</p>
-        ) : action && mergeConfirmed && target ? (
-          <p>Merge &quot;{action.tag.name}&quot; into &quot;{target.name}&quot;? This affects {action.tag.link_count} link{action.tag.link_count === 1 ? "" : "s"} currently tagged &quot;{action.tag.name}&quot; and removes the source tag. Links already tagged &quot;{target.name}&quot; keep that tag. This cannot be undone.</p>
-        ) : <p>Choose the tag that will replace &quot;{action?.tag.name}&quot; on {action?.tag.link_count} link{action?.tag.link_count === 1 ? "" : "s"}. You will review the merge before saving.</p>}
-        confirmLabel={action?.type === "delete" ? "Delete tag" : mergeConfirmed ? "Confirm merge" : "Review merge"}
+        {...getActionDetails(action, mergeConfirmed, target)}
         danger={action?.type === "delete" || mergeConfirmed}
         busy={busy}
         error={error}
@@ -167,6 +168,40 @@ export default function TagsPage() {
   );
 }
 
+interface TagResultsProps {
+  tags: Tag[];
+  query: string;
+  loading: boolean;
+  loadFailed: boolean;
+  onChanged: () => Promise<void>;
+  onAction: (type: TagAction["type"], tag: Tag) => void;
+  searchRef: RefObject<HTMLInputElement | null>;
+}
+
+function TagResults({ tags, query, loading, loadFailed, onChanged, onAction, searchRef }: Readonly<TagResultsProps>) {
+  if (loading) return <output className="block text-[length:var(--text-sm)] text-[var(--color-ink-3)]">Loading...</output>;
+  if (tags.length === 0 && !loadFailed) {
+    return (
+      <div className="flex flex-col items-center rounded-[var(--radius-lg)] border border-dashed border-[var(--color-line)] px-5 py-14 text-center">
+        <span className="mb-4 flex h-12 w-12 items-center justify-center rounded-[var(--radius-lg)] bg-[var(--color-accent-bg)] text-[var(--color-accent)]"><TagIcon size={24} /></span>
+        <p className="text-[length:var(--text-base)] font-semibold text-[var(--color-ink)]">No tags yet</p>
+        <p className="mt-1 text-[length:var(--text-sm)] text-[var(--color-ink-2)]">Tags you add to links will show up here.</p>
+        <Link href="/" className={buttonClasses({ variant: "primary", className: "mt-5" })}>Back to your links</Link>
+      </div>
+    );
+  }
+  const filteredTags = tags.filter((tag) => tag.name.toLowerCase().includes(query.trim().toLowerCase()));
+  return (
+    <>
+      <output className="mb-3 block text-[length:var(--text-xs)] text-[var(--color-ink-3)]">{filteredTags.length} of {tags.length} tags</output>
+      {filteredTags.length === 0 && tags.length > 0 && <p className="text-[length:var(--text-sm)] text-[var(--color-ink-2)]">No tags match your search.</p>}
+      <ul aria-label="Tags" className="flex flex-col gap-2">
+        {filteredTags.map((tag) => <TagRow key={tag.id} tag={tag} onChanged={onChanged} onAction={(type) => onAction(type, tag)} canMerge={tags.length > 1} restoreFallback={() => searchRef.current?.focus()} />)}
+      </ul>
+    </>
+  );
+}
+
 interface TagRowProps {
   tag: Tag;
   onChanged: () => Promise<void>;
@@ -175,7 +210,7 @@ interface TagRowProps {
   restoreFallback: () => void;
 }
 
-function TagRow({ tag, onChanged, onAction, canMerge, restoreFallback }: TagRowProps) {
+function TagRow({ tag, onChanged, onAction, canMerge, restoreFallback }: Readonly<TagRowProps>) {
   const [editing, setEditing] = useState<"name" | "color" | null>(null);
   const [name, setName] = useState(tag.name);
   const [draftColor, setDraftColor] = useState(tag.color ?? "");
@@ -184,6 +219,10 @@ function TagRow({ tag, onChanged, onAction, canMerge, restoreFallback }: TagRowP
   const rowRef = useRef<HTMLLIElement>(null);
   const requestPending = useRef(false);
   const color = editing === "color" && isTagColorFamily(draftColor) ? getFamilyColor(draftColor) : getTagColor(tag.name);
+
+  useEffect(() => {
+    if (editing) rowRef.current?.querySelector<HTMLElement>("input, select")?.focus();
+  }, [editing]);
 
   function restoreFocus() {
     requestAnimationFrame(() => {
@@ -205,6 +244,12 @@ function TagRow({ tag, onChanged, onAction, canMerge, restoreFallback }: TagRowP
     setEditing(null);
     setError(null);
     restoreFocus();
+  }
+
+  function handleEditorKeyDown(event: KeyboardEvent<HTMLElement>) {
+    if (event.key !== "Escape") return;
+    event.preventDefault();
+    cancelEditing();
   }
 
   async function save() {
@@ -245,20 +290,20 @@ function TagRow({ tag, onChanged, onAction, canMerge, restoreFallback }: TagRowP
         { label: "Delete", disabled: busy, danger: true, onSelect: () => { setEditing(null); onAction("delete"); } },
       ]} />
       {editing && (
-        <form className="flex w-full min-w-0 flex-wrap items-end gap-2 border-t border-[var(--color-hairline)] pt-3" onSubmit={(event) => { event.preventDefault(); void save(); }} onKeyDown={(event) => { if (event.key === "Escape") { event.preventDefault(); cancelEditing(); } }}>
+        <form className="flex w-full min-w-0 flex-wrap items-end gap-2 border-t border-[var(--color-hairline)] pt-3" onSubmit={(event) => { event.preventDefault(); void save(); }}>
           <div className="flex min-w-0 flex-1 basis-40 flex-col gap-2 text-[length:var(--text-xs)] font-medium">
             <label htmlFor={`tag-${editing}-${tag.id}`}>{editing === "name" ? "Tag name" : "Tag colour"}</label>
             {editing === "name" ? (
-              <input id={`tag-name-${tag.id}`} autoFocus value={name} onChange={(event) => setName(event.target.value)} disabled={busy} aria-invalid={!!error} aria-describedby={error ? `tag-error-${tag.id}` : undefined} className={INPUT_CLASS} />
+              <input id={`tag-name-${tag.id}`} value={name} onChange={(event) => setName(event.target.value)} onKeyDown={handleEditorKeyDown} disabled={busy} aria-invalid={!!error} aria-describedby={error ? `tag-error-${tag.id}` : undefined} className={INPUT_CLASS} />
             ) : (
-              <select id={`tag-color-${tag.id}`} autoFocus value={draftColor} onChange={(event) => setDraftColor(event.target.value)} disabled={busy} className={INPUT_CLASS}>
+              <select id={`tag-color-${tag.id}`} value={draftColor} onChange={(event) => setDraftColor(event.target.value)} onKeyDown={handleEditorKeyDown} disabled={busy} className={INPUT_CLASS}>
                 <option value="">Automatic</option>
                 {TAG_COLOR_FAMILIES.map((family) => <option key={family} value={family}>{family[0].toUpperCase() + family.slice(1)}</option>)}
               </select>
             )}
           </div>
-          <Button type="submit" variant="primary" disabled={busy || (editing === "name" && !name.trim())}>{busy ? "Saving..." : "Save"}</Button>
-          <Button onClick={cancelEditing} disabled={busy}>Cancel</Button>
+          <Button type="submit" variant="primary" onKeyDown={handleEditorKeyDown} disabled={busy || (editing === "name" && !name.trim())}>{busy ? "Saving..." : "Save"}</Button>
+          <Button onClick={cancelEditing} onKeyDown={handleEditorKeyDown} disabled={busy}>Cancel</Button>
         </form>
       )}
       {error && <p id={`tag-error-${tag.id}`} role="alert" className="w-full text-[length:var(--text-xs)] text-[var(--color-danger)]">{error}</p>}

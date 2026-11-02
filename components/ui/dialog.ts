@@ -6,8 +6,8 @@ export function trapDialogFocus(event: KeyboardEvent<HTMLDialogElement>) {
     'button:not(:disabled), input:not(:disabled), select:not(:disabled), textarea:not(:disabled), a[href], [tabindex="0"]',
   )).filter((element) => !element.closest("fieldset:disabled"));
   const first = controls[0];
-  const last = controls[controls.length - 1];
-  if (!first) {
+  const last = controls.at(-1);
+  if (!first || !last) {
     event.preventDefault();
     event.currentTarget.focus();
   } else if (event.shiftKey && document.activeElement === first) {

@@ -297,7 +297,7 @@ interface EditFieldsProps {
   onCancel: () => void;
 }
 
-function EditFields({ link, availableTags, tagsOnly, onUpdate, onSaved, onCancel }: EditFieldsProps) {
+function EditFields({ link, availableTags, tagsOnly, onUpdate, onSaved, onCancel }: Readonly<EditFieldsProps>) {
   const editorRef = useRef<HTMLDivElement>(null);
   const [notes, setNotes] = useState(link.notes || "");
   const [tags, setTags] = useState(link.tags);
