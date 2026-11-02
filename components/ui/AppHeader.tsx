@@ -1,6 +1,6 @@
 "use client";
 
-import { LinkIcon, MoreIcon, PlusIcon } from "@/components/ui/Icon";
+import { MoreIcon, PlusIcon } from "@/components/ui/Icon";
 import { Button } from "@/components/ui/Button";
 import { Menu, type MenuItem } from "@/components/ui/Menu";
 import { ShortcutsHelp } from "@/components/ui/ShortcutsHelp";
@@ -13,34 +13,17 @@ interface AppHeaderProps {
 
 export function AppHeader({ totalLinks, menuItems, onAdd }: AppHeaderProps) {
   return (
-    <header className="sticky top-0 z-40 border-b border-[var(--color-hairline)] bg-[var(--color-page)]/85 backdrop-blur-md">
-      <div className="mx-auto flex h-14 w-full max-w-[var(--container-wide)] items-center justify-between gap-3 px-5">
-        <div className="flex min-w-0 items-center gap-2.5">
-          <span
-            className="flex h-7 w-7 shrink-0 items-center justify-center rounded-[var(--radius-md)] bg-[var(--color-accent-solid)] text-[var(--color-inverse)] shadow-sm"
-            aria-hidden="true"
-          >
-            <LinkIcon size={15} />
-          </span>
-          <h1 className="text-[var(--text-lg)] font-semibold tracking-tight text-[var(--color-ink)]">
-            Indexio
-          </h1>
-          <span className="rounded-[var(--radius-full)] bg-[var(--color-inset)] px-2 py-0.5 font-mono text-[var(--text-2xs)] text-[var(--color-ink-2)]">
-            {totalLinks} link{totalLinks === 1 ? "" : "s"}
-          </span>
+    <header className="border-b border-[var(--color-line)]">
+      <div className="mx-auto flex min-h-24 w-full max-w-[var(--container-wide)] flex-wrap items-center justify-between gap-3 px-5 py-5 sm:px-8">
+        <div className="flex min-w-0 items-baseline gap-4">
+          <span className="font-display text-3xl text-[var(--color-ink)]">Indexio<span className="text-[var(--color-accent)]">.</span></span>
+          <span className="hidden font-mono text-[var(--text-xs)] text-[var(--color-ink-3)] sm:inline">A personal link index</span>
+          <span className="sr-only">{totalLinks} links</span>
         </div>
-
         <div className="flex shrink-0 items-center gap-2">
-          <Button variant="primary" size="sm" onClick={onAdd}>
-            <PlusIcon size={14} />
-            Add
-          </Button>
+          <Button variant="primary" size="sm" onClick={onAdd}><PlusIcon size={15} /> Add</Button>
           <ShortcutsHelp />
-          <Menu
-            label="More actions"
-            trigger={<MoreIcon size={18} />}
-            items={menuItems}
-          />
+          <Menu label="More actions" trigger={<MoreIcon size={18} />} items={menuItems} />
         </div>
       </div>
     </header>

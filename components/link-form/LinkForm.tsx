@@ -95,7 +95,7 @@ export function LinkForm({ onCreated, availableTags, inputRef }: LinkFormProps) 
       ref={formRef}
       onSubmit={handleSubmit}
       onKeyDown={handleKeyDown}
-      className={`rounded-[var(--radius-lg)] border bg-[var(--color-surface)] shadow-md transition-[border-color,box-shadow] focus-within:ring-[3px] focus-within:ring-[var(--color-focus)] ${
+      className={`rounded-[var(--radius-sm)] border bg-[var(--color-surface)] transition-[border-color,box-shadow] focus-within:ring-[3px] focus-within:ring-[var(--color-focus)] ${
         error
           ? "border-[var(--color-danger)]"
           : "border-[var(--color-line)] focus-within:border-[var(--color-accent)]"
@@ -150,6 +150,7 @@ export function LinkForm({ onCreated, availableTags, inputRef }: LinkFormProps) 
         <div className="flex flex-col gap-2 border-t border-[var(--color-hairline)] px-4 pt-3 pb-3 sm:px-5">
           <TagPicker availableTags={availableTags} selected={selectedTags} onChange={setSelectedTags} />
           <textarea
+            aria-label="Notes (optional)"
             value={notes}
             onChange={(e) => setNotes(e.target.value)}
             placeholder="Notes (optional)"

@@ -64,10 +64,11 @@ export function LinkList({
 
   return (
     <>
-      <ul className="grid grid-cols-1 items-stretch gap-5 sm:grid-cols-2 xl:grid-cols-3">
-        {links.map((link) => (
+      <ul aria-label="Saved links" className="border-t border-[var(--color-line-strong)]">
+        {links.map((link, index) => (
           <LinkCard
             key={link.id}
+            index={index + 1}
             link={link}
             deleting={deletingIds.has(link.id)}
             editing={!selectionMode && editingId === link.id}
@@ -97,6 +98,7 @@ export function LinkList({
 }
 
 interface LinkCardProps {
+  index: number;
   link: Link;
   deleting: boolean;
   editing: boolean;
@@ -111,6 +113,7 @@ interface LinkCardProps {
 }
 
 function LinkCard({
+  index,
   link,
   deleting,
   editing,
@@ -129,16 +132,16 @@ function LinkCard({
 
   return (
     <li
-      className={`group relative flex flex-col overflow-hidden rounded-[var(--radius-lg)] border shadow-sm transition-[transform,box-shadow,border-color,background-color,opacity] duration-200 has-[:focus-visible]:border-[var(--color-accent)] has-[:focus-visible]:ring-[3px] has-[:focus-visible]:ring-[var(--color-focus)] ${
+      className={`group relative flex gap-3 border-b px-1 py-6 transition-[background-color,opacity] duration-200 sm:gap-6 sm:px-3 has-[:focus-visible]:ring-[3px] has-[:focus-visible]:ring-[var(--color-focus)] ${
         selected
           ? "border-[var(--color-accent)] bg-[var(--color-accent-bg)]"
-          : "border-[var(--color-hairline)] bg-[var(--color-surface)]"
+          : "border-[var(--color-line)] bg-transparent"
       } ${
         deleting
           ? "scale-[0.98] opacity-40"
           : selected
             ? ""
-            : "hover:-translate-y-0.5 hover:border-[var(--color-line)] hover:shadow-md"
+            : "hover:bg-[var(--color-surface)]"
       }`}
     >
       {selectionMode ? (
@@ -159,11 +162,11 @@ function LinkCard({
         />
       )}
 
-      <div className="pointer-events-none relative z-[1]">
-        <LinkThumbnail imageUrl={link.image_url} faviconUrl={link.favicon_url} host={host} />
+      <div className="pointer-events-none relative z-[1] w-7 shrink-0 pt-1 font-mono text-[var(--text-xs)] text-[var(--color-ink-3)] sm:w-10">
+        {String(index).padStart(2, "0")}
         {selectionMode && (
           <span
-            className={`absolute top-3 left-3 flex h-6 w-6 items-center justify-center rounded-[var(--radius-sm)] border shadow-sm ${
+            className={`absolute top-9 left-0 flex h-6 w-6 items-center justify-center rounded-[var(--radius-sm)] border ${
               selected
                 ? "border-[var(--color-accent)] bg-[var(--color-accent-solid)] text-[var(--color-inverse)]"
                 : "border-[var(--color-line-strong)] bg-[var(--color-surface)]"
@@ -174,8 +177,8 @@ function LinkCard({
         )}
       </div>
 
-      <div className="pointer-events-none relative z-[1] flex min-w-0 flex-1 flex-col p-4">
-        <p className="flex items-center gap-2 font-mono text-[var(--text-xs)] text-[var(--color-ink-3)]">
+      <div className="pointer-events-none relative z-[1] flex min-w-0 flex-1 flex-col">
+        <p className="flex flex-wrap items-center gap-2 font-mono text-[var(--text-xs)] text-[var(--color-ink-3)]">
           {link.favicon_url && !faviconFailed ? (
             // eslint-disable-next-line @next/next/no-img-element -- tiny remote favicon
             <img
@@ -203,7 +206,7 @@ function LinkCard({
         <p
           className={`mt-2 line-clamp-2 leading-snug break-words ${
             link.title
-              ? "text-[var(--text-lg)] font-semibold text-[var(--color-ink)]"
+              ? "font-display text-2xl text-[var(--color-ink)] sm:text-[1.75rem]"
               : "font-mono text-[var(--text-base)] text-[var(--color-ink)]"
           }`}
         >
@@ -217,7 +220,7 @@ function LinkCard({
         )}
 
         {link.notes && !editing && (
-          <p className="mt-2 line-clamp-2 border-l-2 border-[var(--color-accent-line)] py-0.5 pl-3 text-[var(--text-sm)] leading-relaxed text-[var(--color-ink-2)]">
+          <p className="mt-2 line-clamp-2 text-[var(--text-sm)] italic leading-relaxed text-[var(--color-ink-2)]">
             {link.notes}
           </p>
         )}
@@ -226,15 +229,15 @@ function LinkCard({
           <EditFields link={link} onSaved={onSaved} onCancel={onCancelEdit} />
         ) : (
           link.tags.length > 0 && (
-            <div className="mt-auto flex flex-wrap gap-1.5 overflow-hidden pt-3">
+            <div className="flex flex-wrap gap-2 overflow-hidden pt-3">
               {link.tags.map((tag) => {
                 const color = getTagColor(tag);
                 return (
                   <span
                     key={tag}
-                    style={{ background: color.bg, color: color.text }}
-                    className="rounded-[var(--radius-sm)] px-2 py-0.5 text-[var(--text-2xs)]"
+                    className="flex max-w-full items-center gap-1.5 break-words text-[var(--text-xs)] text-[var(--color-ink-2)]"
                   >
+                    <span aria-hidden="true" className="h-1.5 w-1.5 shrink-0 rounded-full" style={{ background: color.text }} />
                     {tag}
                   </span>
                 );
@@ -244,13 +247,19 @@ function LinkCard({
         )}
       </div>
 
+      {link.image_url && !editing && (
+        <div className="pointer-events-none relative z-[1] hidden w-32 shrink-0 self-center overflow-hidden rounded-[var(--radius-sm)] md:block">
+          <LinkThumbnail imageUrl={link.image_url} faviconUrl={link.favicon_url} host={host} />
+        </div>
+      )}
+
       {!editing && !selectionMode && (
-        <div className="card-actions pointer-events-none absolute top-3 right-3 z-[2] flex shrink-0 items-center gap-1 opacity-0 transition-opacity group-hover:opacity-100 group-focus-within:opacity-100">
+        <div className="card-actions pointer-events-none relative z-[2] flex shrink-0 flex-col items-center gap-2 sm:flex-row sm:self-start">
           <button
             type="button"
             onClick={onEdit}
             aria-label="Edit"
-            className={`pointer-events-auto flex h-8 w-8 items-center justify-center rounded-[var(--radius-md)] border border-[var(--color-line)] bg-[var(--color-surface-raised)] text-[var(--color-ink-2)] shadow-sm hover:text-[var(--color-ink)] ${FOCUS_RING}`}
+            className={`pointer-events-auto flex h-11 w-11 items-center justify-center rounded-[var(--radius-sm)] text-[var(--color-ink-2)] hover:bg-[var(--color-inset)] hover:text-[var(--color-ink)] ${FOCUS_RING}`}
           >
             <PencilIcon size={15} />
           </button>
@@ -258,7 +267,7 @@ function LinkCard({
             type="button"
             onClick={onDelete}
             aria-label="Delete"
-            className={`pointer-events-auto flex h-8 w-8 items-center justify-center rounded-[var(--radius-md)] border border-[var(--color-line)] bg-[var(--color-surface-raised)] text-[var(--color-danger)] shadow-sm hover:bg-[var(--color-danger-bg)] ${FOCUS_RING}`}
+            className={`pointer-events-auto flex h-11 w-11 items-center justify-center rounded-[var(--radius-sm)] text-[var(--color-ink-3)] hover:bg-[var(--color-danger-bg)] hover:text-[var(--color-danger)] ${FOCUS_RING}`}
           >
             <TrashIcon size={15} />
           </button>
@@ -308,6 +317,7 @@ function EditFields({ link, onSaved, onCancel }: EditFieldsProps) {
   return (
     <div className="pointer-events-auto relative z-[1] mt-3 flex flex-col gap-2">
       <textarea
+        aria-label="Link notes"
         value={notes}
         onChange={(e) => setNotes(e.target.value)}
         placeholder="Notes"
@@ -315,6 +325,7 @@ function EditFields({ link, onSaved, onCancel }: EditFieldsProps) {
         className="w-full rounded-[var(--radius-sm)] border border-[var(--color-hairline)] bg-[var(--color-inset)] px-3 py-1.5 text-[var(--text-sm)] text-[var(--color-ink)] outline-none focus:border-[var(--color-accent)]"
       />
       <input
+        aria-label="Link tags"
         type="text"
         value={tags}
         onChange={(e) => setTags(e.target.value)}

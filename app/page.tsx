@@ -332,30 +332,43 @@ function HomePageContent() {
         onChange={handleImportFile}
         className="hidden"
       />
-    <div className={`mx-auto w-full max-w-[var(--container-wide)] px-5 py-8 ${selectionMode ? "pb-32" : ""}`}>
+    <main className={`mx-auto w-full max-w-[var(--container-wide)] px-5 py-8 sm:px-8 sm:py-12 ${selectionMode ? "pb-64 sm:pb-32" : ""}`}>
       <div className="mx-auto w-full max-w-[var(--container-col)]">
-      <div className="mb-6 flex flex-col gap-3">
+      <div className="mb-8 flex items-end justify-between gap-4 border-b border-[var(--color-line)] pb-6">
+        <div>
+          <p className="eyebrow mb-3">Your personal catalogue</p>
+          <h1 className="font-display text-5xl sm:text-6xl">The library</h1>
+          <p className="mt-3 text-[var(--text-sm)] text-[var(--color-ink-2)]">Good finds. Kept in good company.</p>
+        </div>
+        <span className="hidden pb-1 font-mono text-[var(--text-xs)] text-[var(--color-ink-3)] sm:block">{String(totalLinks).padStart(2, "0")} saved links</span>
+      </div>
+      <div className="mb-6 grid gap-4 md:grid-cols-2">
+        <div className="min-w-0">
+          <p className="eyebrow mb-2">01 / Find</p>
         <SearchBar
           value={query}
           onChange={setQuery}
           totalCount={totalLinks}
           resultCount={matchCount}
         />
+        </div>
+        <div className="min-w-0">
+          <p className="eyebrow mb-2">02 / Collect</p>
         <LinkForm
           onCreated={handleChanged}
           availableTags={tags.map((t) => t.name)}
           inputRef={addInputRef}
         />
+        </div>
       </div>
 
-      <div className="mb-5 flex items-center gap-3">
+      <div className="mb-6 flex flex-col gap-3 sm:flex-row sm:items-center">
         <div className="min-w-0 flex-1">
           {tags.length > 0 && (
             <TagFilter tags={tags} activeTag={activeTag} onSelect={setActiveTag} totalCount={totalLinks} />
           )}
         </div>
         <SortSelect value={sort} onChange={setSort} />
-      </div>
       </div>
 
       {loading && showSkeleton && <LinkListSkeleton />}
@@ -411,7 +424,8 @@ function HomePageContent() {
           brokenIds={brokenIds}
         />
       )}
-    </div>
+      </div>
+    </main>
     {selectionMode && (
       <BulkBar
         selectedCount={selectedIds.size}
