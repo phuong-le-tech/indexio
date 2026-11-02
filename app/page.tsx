@@ -228,25 +228,6 @@ function HomePageContent() {
 
   async function handleCheckLinks() {
     setCheckingLinks(true);
-    const res = await fetch("/api/links/check", { method: "POST" });
-    if (!res.ok) {
-      setCheckingLinks(false);
-      showToast("Could not check links. Try again.", "error");
-      return;
-    }
-    const data = await res.json();
-    const broken = new Set<number>(
-      (data.results || []).filter((r: { ok: boolean }) => !r.ok).map((r: { id: number }) => r.id)
-    );
-    setBrokenIds(broken);
-    setCheckingLinks(false);
-    if (broken.size === 0) {
-      showToast("All links are reachable.", "success");
-    } else {
-      showToast(
-        `${broken.size} link${broken.size === 1 ? "" : "s"} unreachable - flagged below.`,
-        "error"
-      );
     setImportMessage(null);
     try {
       const res = await fetch("/api/links/check", { method: "POST" });
@@ -256,8 +237,9 @@ function HomePageContent() {
         (data.results || []).filter((r: { ok: boolean }) => !r.ok).map((r: { id: number }) => r.id)
       );
       setBrokenIds(broken);
+      showToast(broken.size === 0 ? "All links are reachable." : `${broken.size} links unreachable - flagged below.`, broken.size === 0 ? "success" : "error");
     } catch {
-      setImportMessage("Could not check links");
+      showToast("Could not check links. Try again.", "error");
     } finally {
       setCheckingLinks(false);
     }
@@ -271,24 +253,6 @@ function HomePageContent() {
     const format = file.name.toLowerCase().endsWith(".csv") ? "csv" : "json";
 
     setImporting(true);
-    const res = await fetch("/api/links/import", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ format, content }),
-    });
-    const data = await res.json();
-    setImporting(false);
-
-    if (!res.ok) {
-      showToast(data.error || "Import failed", "error");
-      return;
-    }
-
-    showToast(
-      `Imported ${data.imported} link${data.imported === 1 ? "" : "s"}${data.skipped ? `, skipped ${data.skipped}` : ""}`,
-      "success"
-    );
-    handleChanged();
     setImportMessage(null);
     try {
       const content = await file.text();
@@ -300,17 +264,16 @@ function HomePageContent() {
       const data = await res.json();
 
       if (!res.ok) {
-        setImportMessage(data.error || "Import failed");
+        showToast(data.error || "Import failed", "error");
         return;
       }
 
-      setImportMessage(
-        `Imported ${data.imported} link${data.imported === 1 ? "" : "s"}${data.skipped ? `, skipped ${data.skipped}` : ""}`
+      showToast(
+        `Imported ${data.imported} link${data.imported === 1 ? "" : "s"}${data.skipped ? `, skipped ${data.skipped}` : ""}`, "success"
       );
       handleChanged();
-      setTimeout(() => setImportMessage(null), 5000);
     } catch {
-      setImportMessage("Import failed");
+      showToast("Import failed", "error");
     } finally {
       setImporting(false);
     }
@@ -418,12 +381,7 @@ function HomePageContent() {
             setActiveTag(null);
           }}
         />
-        <div className="rounded-[var(--radius-lg)] border border-dashed border-[var(--color-line)] px-5 py-12 text-center">
-          <p className="text-[var(--text-sm)] text-[var(--color-ink-2)]">No matches.</p>
-          <p className="mt-1 text-[var(--text-xs)] text-[var(--color-ink-3)]">
-            Try a different search or clear the active tag.
-          </p>
-        </div>
+
       )}
 
       {linksLoadFailed && (
@@ -436,7 +394,7 @@ function HomePageContent() {
 
       {brokenIds.size > 0 && (
         <p className="mb-3 text-[var(--text-xs)] text-[var(--color-danger)]">
-          {brokenIds.size} link{brokenIds.size === 1 ? "" : "s"} unreachable — flagged below.
+          {brokenIds.size} link{brokenIds.size === 1 ? "" : "s"} unreachable - flagged below.
         </p>
       )}
 
