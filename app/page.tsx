@@ -362,14 +362,22 @@ function HomePageContent() {
         </div>
       </div>
 
-      <div className="mb-6 flex flex-col gap-3 sm:flex-row sm:items-center">
-        <div className="min-w-0 flex-1">
-          {tags.length > 0 && (
-            <TagFilter tags={tags} activeTag={activeTag} onSelect={setActiveTag} totalCount={totalLinks} />
-          )}
+      <div className="catalogue-layout">
+        <TagFilter tags={tags} activeTag={activeTag} onSelect={setActiveTag} totalCount={totalLinks} />
+        <section aria-label="Library results" className="min-w-0">
+      <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
+        <div aria-live="polite" aria-atomic="true" className="min-w-0 text-sm text-[var(--color-ink-2)]">
+          {matchCount} result{matchCount === 1 ? "" : "s"}
         </div>
         <SortSelect value={sort} onChange={setSort} />
       </div>
+      {hasFilter && (
+        <div className="mb-4 flex min-w-0 flex-wrap items-center gap-2">
+          {activeTag && <button type="button" aria-label={`Remove filter ${activeTag}`} onClick={() => setActiveTag(null)} className="min-h-11 max-w-full truncate rounded border border-[var(--color-accent-line)] bg-[var(--color-accent-bg)] px-3 text-sm text-[var(--color-accent)]">Tag: {activeTag} ×</button>}
+          {query && <button type="button" aria-label="Remove search filter" onClick={() => setQuery("")} className="min-h-11 max-w-full truncate rounded border border-[var(--color-line)] px-3 text-sm">Search: {query} ×</button>}
+          <button type="button" onClick={() => { setQuery(""); setActiveTag(null); }} className="min-h-11 px-2 text-sm underline">Clear all</button>
+        </div>
+      )}
 
       {loading && showSkeleton && <LinkListSkeleton />}
 
@@ -394,7 +402,6 @@ function HomePageContent() {
             setActiveTag(null);
           }}
         />
-
       )}
 
       {linksLoadFailed && (
@@ -430,6 +437,8 @@ function HomePageContent() {
           brokenIds={brokenIds}
         />
       )}
+        </section>
+      </div>
       </div>
     </main>
     {selectionMode && (

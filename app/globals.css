@@ -169,6 +169,12 @@
   }
 }
 
+.catalogue-layout { display: grid; gap: 1.5rem; }
+
+@media (min-width: 1024px) {
+  .catalogue-layout { grid-template-columns: 11rem minmax(0, 1fr); }
+}
+
 .catalogue-grid {
   display: grid;
   grid-template-columns: minmax(0, 1fr);
