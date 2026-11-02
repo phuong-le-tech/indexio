@@ -1,141 +1,79 @@
 "use client";
 
-import { useRef, useState } from "react";
-import { XIcon } from "@/components/ui/Icon";
-import { getTagColor } from "@/lib/tagColors";
+import { useId, useRef, useState } from "react";
+import { CheckIcon, XIcon } from "@/components/ui/Icon";
+import { FOCUS_RING } from "@/components/ui/styles";
 
 interface TagPickerProps {
+  // Callers supply tags in usage order from GET /api/tags.
   availableTags: string[];
   selected: string[];
   onChange: (tags: string[]) => void;
+  disabled?: boolean;
 }
 
-export function TagPicker({ availableTags, selected, onChange }: TagPickerProps) {
+export function TagPicker({ availableTags, selected, onChange, disabled = false }: TagPickerProps) {
   const [input, setInput] = useState("");
   const [open, setOpen] = useState(false);
   const [highlight, setHighlight] = useState(0);
   const inputRef = useRef<HTMLInputElement>(null);
+  const listId = useId();
+  const names = [...new Set([...availableTags, ...selected])];
+  const query = input.trim();
+  const suggestions = names.filter((tag) => tag.toLowerCase().includes(query.toLowerCase()));
+  const canCreate = query !== "" && !names.some((tag) => tag.toLowerCase() === query.toLowerCase());
+  const options = canCreate ? [...suggestions, query] : suggestions;
+  const activeIndex = Math.min(highlight, Math.max(options.length - 1, 0));
 
-  const suggestions = availableTags.filter((tag) => {
-    const isSelected = selected.some((s) => s.toLowerCase() === tag.toLowerCase());
-    if (isSelected) return false;
-    if (input.trim() === "") return true;
-    return tag.toLowerCase().includes(input.trim().toLowerCase());
-  });
-
-  function addTag(name: string) {
-    const trimmed = name.trim();
-    if (!trimmed) return;
-    const alreadySelected = selected.some((s) => s.toLowerCase() === trimmed.toLowerCase());
-    if (!alreadySelected) {
-      onChange([...selected, trimmed]);
-    }
-    setInput("");
-    setHighlight(0);
+  function toggle(name: string) {
+    const existing = selected.find((tag) => tag.toLowerCase() === name.toLowerCase());
+    onChange(existing ? selected.filter((tag) => tag !== existing) : [...selected, name]);
   }
 
-  function removeTag(name: string) {
-    onChange(selected.filter((t) => t !== name));
-  }
-
-  function handleKeyDown(e: React.KeyboardEvent<HTMLInputElement>) {
-    if (e.key === "Enter") {
-      e.preventDefault();
-      if (open && suggestions.length > 0) {
-        addTag(suggestions[highlight]);
-      } else if (input.trim()) {
-        addTag(input);
-      }
-      return;
+  function choose(index: number) {
+    const name = options[index];
+    if (!name || disabled) return;
+    toggle(name);
+    if (canCreate && index === options.length - 1) {
+      setInput("");
+      setHighlight(0);
     }
-    if (e.key === ",") {
-      e.preventDefault();
-      if (input.trim()) addTag(input);
-      return;
-    }
-    if (e.key === "Backspace" && input === "" && selected.length > 0) {
-      removeTag(selected[selected.length - 1]);
-      return;
-    }
-    if (e.key === "ArrowDown") {
-      e.preventDefault();
-      setOpen(true);
-      setHighlight((h) => Math.min(h + 1, Math.max(suggestions.length - 1, 0)));
-      return;
-    }
-    if (e.key === "ArrowUp") {
-      e.preventDefault();
-      setHighlight((h) => Math.max(h - 1, 0));
-      return;
-    }
-    if (e.key === "Escape") {
-      setOpen(false);
-      inputRef.current?.blur();
-    }
+    inputRef.current?.focus();
   }
 
   return (
-    <div className="relative">
-      <div className="flex w-full flex-wrap items-center gap-1.5 rounded-[var(--radius-sm)] border border-[var(--color-hairline)] bg-[var(--color-surface)] px-2 py-1.5 focus-within:border-[var(--color-accent)] focus-within:ring-[3px] focus-within:ring-[var(--color-focus)]">
-        {selected.map((tag) => {
-          const color = getTagColor(tag);
-          return (
-            <span
-              key={tag}
-              style={{ background: color.bg, borderColor: color.border, color: color.text }}
-              className="flex items-center gap-1 rounded-[var(--radius-full)] border py-0.5 pr-1 pl-2 text-[length:var(--text-2xs)] font-medium"
-            >
-              {tag}
-              <button
-                type="button"
-                onClick={() => removeTag(tag)}
-                aria-label={`Remove ${tag}`}
-                className="flex h-11 w-11 items-center justify-center rounded-full hover:bg-black/10"
-              >
-                <XIcon size={9} />
-              </button>
-            </span>
-          );
-        })}
-        <input
-          aria-label="Add tags"
-          ref={inputRef}
-          type="text"
-          value={input}
-          onChange={(e) => {
-            setInput(e.target.value);
+    <div className="relative min-w-0" onBlur={(event) => {
+      if (!event.currentTarget.contains(event.relatedTarget)) setOpen(false);
+    }}>
+      <div className="flex min-w-0 flex-wrap items-center gap-1 rounded-[var(--radius-sm)] border border-[var(--color-line)] bg-[var(--color-surface)] p-2 focus-within:ring-[3px] focus-within:ring-[var(--color-focus)]">
+        {selected.map((tag) => (
+          <span key={tag} className="flex max-w-full min-w-0 items-center rounded border border-[var(--color-accent-line)] bg-[var(--color-accent-bg)] pl-2 text-xs text-[var(--color-accent)]">
+            <span className="truncate">{tag}</span>
+            <button type="button" disabled={disabled} aria-label={`Remove ${tag}`} onClick={() => onChange(selected.filter((name) => name !== tag))} className={`flex h-10 w-10 shrink-0 items-center justify-center ${FOCUS_RING}`}><XIcon size={12} /></button>
+          </span>
+        ))}
+        <input ref={inputRef} role="combobox" aria-label="Add tags" aria-autocomplete="list" aria-haspopup="listbox" aria-expanded={open} aria-controls={open ? listId : undefined} aria-activedescendant={open && options.length ? `${listId}-${activeIndex}` : undefined} autoComplete="off" disabled={disabled} value={input} onChange={(event) => { setInput(event.target.value); setOpen(true); setHighlight(0); }} onFocus={() => setOpen(true)} placeholder="Find or create tags" className="min-h-10 w-full min-w-0 flex-1 basis-32 bg-transparent text-sm text-[var(--color-ink)] outline-none" onKeyDown={(event) => {
+          if (event.key === "Escape") { event.preventDefault(); event.stopPropagation(); setOpen(false); }
+          if (event.key === "ArrowDown" || event.key === "ArrowUp") {
+            event.preventDefault();
             setOpen(true);
-            setHighlight(0);
-          }}
-          onFocus={() => setOpen(true)}
-          onBlur={() => setTimeout(() => setOpen(false), 100)}
-          onKeyDown={handleKeyDown}
-          placeholder={selected.length === 0 ? "Add tags" : ""}
-          className="min-h-11 min-w-[6rem] flex-1 bg-transparent text-[length:var(--text-sm)] text-[var(--color-ink)] outline-none placeholder:text-[var(--color-ink-3)]"
-        />
+            setHighlight(open ? (activeIndex + (event.key === "ArrowDown" ? 1 : -1) + options.length) % Math.max(options.length, 1) : 0);
+          }
+          if (event.key === "Enter") { event.preventDefault(); if (open) choose(activeIndex); else setOpen(true); }
+          if (event.key === "Backspace" && !input && selected.length) onChange(selected.slice(0, -1));
+        }} />
       </div>
-
-      {open && suggestions.length > 0 && (
-        <ul className="absolute top-full left-0 z-10 mt-1 max-h-40 w-full min-w-[10rem] overflow-y-auto rounded-[var(--radius-sm)] border border-[var(--color-hairline)] bg-[var(--color-surface-raised)] py-1 shadow-md">
-          {suggestions.map((tag, i) => {
-            const color = getTagColor(tag);
-            return (
-              <li key={tag}>
-                <button
-                  type="button"
-                  onMouseDown={(e) => e.preventDefault()}
-                  onClick={() => addTag(tag)}
-                  onMouseEnter={() => setHighlight(i)}
-                  style={i === highlight ? { background: color.bg, color: color.text } : undefined}
-                  className={`min-h-11 w-full px-3 py-1.5 text-left text-[length:var(--text-sm)] ${
-                    i === highlight ? "" : "text-[var(--color-ink-2)]"
-                  }`}
-                >
-                  {tag}
-                </button>
-              </li>
-            );
+      {open && !disabled && (
+        <ul id={listId} role="listbox" aria-label="Tag suggestions" aria-multiselectable="true" className="absolute inset-x-0 top-full z-30 mt-1 max-h-60 overflow-auto rounded-[var(--radius-sm)] border border-[var(--color-line)] bg-[var(--color-surface-raised)] p-1 shadow-lg">
+          {options.map((tag, index) => {
+            const checked = selected.some((name) => name.toLowerCase() === tag.toLowerCase());
+            const create = canCreate && index === options.length - 1;
+            return <li key={`${tag}-${index}`} id={`${listId}-${index}`} role="option" aria-selected={checked} onPointerDown={(event) => event.preventDefault()} onClick={() => choose(index)} onPointerMove={() => setHighlight(index)} className={`flex min-h-11 cursor-pointer items-center gap-2 rounded px-2 text-sm [overflow-wrap:anywhere] ${index === activeIndex ? "bg-[var(--color-accent-bg)] text-[var(--color-accent)]" : "text-[var(--color-ink)]"}`}>
+              <span aria-hidden="true" className="flex h-4 w-4 shrink-0 items-center justify-center rounded border border-current">{checked && <CheckIcon size={12} />}</span>
+              <span>{create ? `Create '${tag}'` : tag}</span>
+            </li>;
           })}
+          {options.length === 0 && <li role="presentation" className="p-3 text-sm text-[var(--color-ink-2)]">Type a name to create your first tag.</li>}
         </ul>
       )}
     </div>
