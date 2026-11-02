@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useEffect, useState } from "react";
 import { TagIcon } from "@/components/ui/Icon";
+import { EmptyState } from "@/components/ui/EmptyState";
 import { Button, buttonClasses } from "@/components/ui/Button";
 import { FOCUS_RING } from "@/components/ui/styles";
 import { TAG_COLOR_FAMILIES, getFamilyColor, getTagColor, setTagColorOverrides } from "@/lib/tagColors";
@@ -41,7 +42,7 @@ export default function TagsPage() {
       return <p role="status" className="text-[var(--text-sm)] text-[var(--color-ink-3)]">Loading…</p>;
     }
     if (loadFailed) {
-      return <p className="text-[var(--text-sm)] text-[var(--color-danger)]">Could not load tags.</p>;
+      return <EmptyState icon={<TagIcon size={24} />} title="Could not load tags" description="Your collection is still here. Try connecting again." actionLabel="Retry" onAction={() => void loadTags()} />;
     }
     if (tags.length === 0) {
       return (
@@ -60,7 +61,7 @@ export default function TagsPage() {
       );
     }
     return (
-      <ul className="flex flex-col gap-2">
+      <ul aria-label="Tags" className="flex flex-col border-t border-[var(--color-line-strong)]">
         {tags.map((tag) => (
           <TagRow key={tag.id} tag={tag} allTags={tags} onChanged={loadTags} />
         ))}
@@ -69,18 +70,19 @@ export default function TagsPage() {
   }
 
   return (
-    <div className="mx-auto w-full max-w-[var(--container-col)] px-5 py-10">
-      <div className="mb-6 flex items-center justify-between gap-3">
-        <h1 className="text-[var(--text-xl)] font-semibold tracking-tight text-[var(--color-ink)]">
-          Manage tags
-        </h1>
+    <main className="mx-auto w-full max-w-[var(--container-col)] px-5 py-8 sm:px-8 sm:py-12">
+      <div className="mb-10 flex items-center justify-between gap-3 border-b border-[var(--color-line)] pb-6">
+        <span className="font-display text-3xl">Indexio<span className="text-[var(--color-accent)]">.</span></span>
         <Link href="/" className={buttonClasses({ variant: "secondary", size: "sm" })}>
           Back to index
         </Link>
       </div>
 
+      <p className="eyebrow mb-3">Organize your collection</p>
+      <h1 className="font-display text-5xl sm:text-6xl">The tag index</h1>
+      <p className="mt-3 mb-8 max-w-lg text-[var(--text-sm)] text-[var(--color-ink-2)]">Small labels. Useful connections. Rename, recolor or bring related tags together.</p>
       {renderTagList()}
-    </div>
+    </main>
   );
 }
 
@@ -186,13 +188,13 @@ function TagRow({ tag, allTags, onChanged }: TagRowProps) {
   const otherTags = allTags.filter((t) => t.id !== tag.id);
 
   return (
-    <li className="flex flex-wrap items-center gap-3 rounded-[var(--radius-md)] border border-[var(--color-hairline)] bg-[var(--color-surface)] px-4 py-3 shadow-sm transition-shadow focus-within:border-[var(--color-line)] hover:shadow-md">
+    <li className="flex min-w-0 flex-wrap items-center gap-3 border-b border-[var(--color-line)] px-1 py-5 transition-colors hover:bg-[var(--color-surface)] sm:px-3">
       <div className="relative">
         <button
           type="button"
           onClick={() => setColorPickerOpen((prev) => !prev)}
           aria-label="Change tag color"
-          className={`flex h-6 w-6 items-center justify-center rounded-full hover:ring-2 hover:ring-[var(--color-line)] ${FOCUS_RING}`}
+          className={`flex h-11 w-11 items-center justify-center rounded-full hover:ring-2 hover:ring-[var(--color-line)] ${FOCUS_RING}`}
         >
           <span
             className="h-2.5 w-2.5 rounded-full"
@@ -201,7 +203,7 @@ function TagRow({ tag, allTags, onChanged }: TagRowProps) {
           />
         </button>
         {colorPickerOpen && (
-          <div className="absolute top-full left-0 z-10 mt-1 flex gap-1 rounded-[var(--radius-sm)] border border-[var(--color-line)] bg-[var(--color-surface-raised)] p-2 shadow-lg">
+          <div className="absolute top-full left-0 z-10 mt-1 grid w-44 grid-cols-3 gap-2 rounded-[var(--radius-sm)] border border-[var(--color-line)] bg-[var(--color-surface-raised)] p-2 shadow-lg">
             {TAG_COLOR_FAMILIES.map((family) => {
               const swatch = getFamilyColor(family);
               const isActive = tag.color === family;
@@ -212,7 +214,7 @@ function TagRow({ tag, allTags, onChanged }: TagRowProps) {
                   onClick={() => handlePickColor(family)}
                   aria-label={family}
                   title={family}
-                  className={`h-5 w-5 rounded-full ${FOCUS_RING} ${isActive ? "ring-2 ring-[var(--color-accent)] ring-offset-1 ring-offset-[var(--color-surface-raised)]" : ""}`}
+                  className={`h-11 w-11 rounded-full border-[12px] border-[var(--color-surface-raised)] ${FOCUS_RING} ${isActive ? "ring-2 ring-[var(--color-accent)] ring-offset-1 ring-offset-[var(--color-surface-raised)]" : ""}`}
                   style={{ background: swatch.text }}
                 />
               );
@@ -223,6 +225,7 @@ function TagRow({ tag, allTags, onChanged }: TagRowProps) {
 
       {editing ? (
         <input
+          aria-label="Tag name"
           type="text"
           value={name}
           onChange={(e) => setName(e.target.value)}
@@ -241,7 +244,7 @@ function TagRow({ tag, allTags, onChanged }: TagRowProps) {
         <button
           type="button"
           onClick={() => setEditing(true)}
-          className={`flex-1 rounded-[var(--radius-sm)] text-left text-[var(--text-sm)] text-[var(--color-ink)] hover:underline ${FOCUS_RING}`}
+          className={`min-h-11 min-w-0 flex-1 break-words rounded-[var(--radius-sm)] text-left text-[var(--text-base)] text-[var(--color-ink)] hover:underline ${FOCUS_RING}`}
         >
           {tag.name}
         </button>
@@ -252,14 +255,15 @@ function TagRow({ tag, allTags, onChanged }: TagRowProps) {
       </span>
 
       {otherTags.length > 0 && (
-        <div className="flex items-center gap-1.5">
+        <div className="flex max-w-full items-center gap-1.5">
           <select
+            aria-label={`Merge ${tag.name} into`}
             value={mergeTarget}
             onChange={(e) => {
               setMergeTarget(e.target.value);
               setMergeArmed(false);
             }}
-            className={`h-8 rounded-[var(--radius-sm)] border border-[var(--color-hairline)] bg-[var(--color-inset)] px-2 text-[var(--text-xs)] text-[var(--color-ink-2)] outline-none ${FOCUS_RING}`}
+            className={`h-11 min-w-0 max-w-40 rounded-[var(--radius-sm)] border border-[var(--color-line)] bg-[var(--color-surface)] px-2 text-[var(--text-xs)] text-[var(--color-ink-2)] outline-none ${FOCUS_RING}`}
           >
             <option value="">Merge into…</option>
             {otherTags.map((t) => (
