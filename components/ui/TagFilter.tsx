@@ -79,7 +79,8 @@ function Pill({ label, count, active, onClick, color }: PillProps) {
           ? { background: color.bg, borderColor: color.border, color: color.text }
           : undefined
       }
-      className={`flex shrink-0 items-center gap-2 rounded-[var(--radius-full)] border px-3 py-1.5 text-[var(--text-xs)] whitespace-nowrap transition-colors ${FOCUS_RING} ${
+      aria-pressed={active}
+      className={`flex min-h-11 shrink-0 items-center gap-2 rounded-[var(--radius-sm)] border px-3 py-1.5 text-[var(--text-xs)] whitespace-nowrap transition-colors ${FOCUS_RING} ${
         active
           ? color
             ? "font-medium focus-visible:border-[var(--color-accent)]"

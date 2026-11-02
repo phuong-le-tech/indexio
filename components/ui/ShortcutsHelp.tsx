@@ -36,7 +36,7 @@ export function ShortcutsHelp() {
         type="button"
         onClick={() => setOpen(true)}
         aria-label="Keyboard shortcuts"
-        className={`flex h-9 w-9 items-center justify-center rounded-[var(--radius-md)] border border-[var(--color-line)] bg-[var(--color-surface)] text-[var(--text-sm)] text-[var(--color-ink-2)] shadow-sm transition-colors hover:bg-[var(--color-surface-hover)] hover:text-[var(--color-ink)] ${FOCUS_RING}`}
+        className={`flex h-11 w-11 items-center justify-center rounded-[var(--radius-md)] border border-[var(--color-line)] bg-[var(--color-surface)] text-[var(--text-sm)] text-[var(--color-ink-2)] transition-colors hover:bg-[var(--color-surface-hover)] hover:text-[var(--color-ink)] ${FOCUS_RING}`}
       >
         ?
       </button>
@@ -66,7 +66,7 @@ export function ShortcutsHelp() {
                 type="button"
                 onClick={() => setOpen(false)}
                 aria-label="Close"
-                className={`flex h-7 w-7 items-center justify-center rounded-[var(--radius-sm)] text-[var(--color-ink-3)] hover:bg-[var(--color-surface-hover)] hover:text-[var(--color-ink)] ${FOCUS_RING}`}
+                className={`flex h-11 w-11 items-center justify-center rounded-[var(--radius-sm)] text-[var(--color-ink-3)] hover:bg-[var(--color-surface-hover)] hover:text-[var(--color-ink)] ${FOCUS_RING}`}
               >
                 ×
               </button>

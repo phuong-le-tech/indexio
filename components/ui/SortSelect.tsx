@@ -19,7 +19,7 @@ export function SortSelect({ value, onChange }: SortSelectProps) {
       value={value}
       onChange={(e) => onChange(e.target.value)}
       aria-label="Sort links"
-      className={`h-8 shrink-0 rounded-[var(--radius-full)] border border-[var(--color-line)] bg-[var(--color-surface)] px-3 text-[var(--text-xs)] text-[var(--color-ink-2)] shadow-sm outline-none hover:bg-[var(--color-surface-hover)] focus-visible:border-[var(--color-accent)] ${FOCUS_RING}`}
+      className={`h-11 shrink-0 rounded-[var(--radius-sm)] border border-[var(--color-line)] bg-[var(--color-surface)] px-3 font-mono text-[var(--text-xs)] text-[var(--color-ink-2)] outline-none hover:bg-[var(--color-surface-hover)] focus-visible:border-[var(--color-accent)] ${FOCUS_RING}`}
     >
       {SORT_OPTIONS.map((option) => (
         <option key={option.value} value={option.value}>
