@@ -7,6 +7,7 @@ import { BulkBar } from "@/components/link-list/BulkBar";
 import { LinkList } from "@/components/link-list/LinkList";
 import { LinkListSkeleton } from "@/components/link-list/LinkListSkeleton";
 import { EmptyState } from "@/components/ui/EmptyState";
+import { Pagination } from "@/components/ui/Pagination";
 import { SearchBar } from "@/components/ui/SearchBar";
 import { AppHeader } from "@/components/ui/AppHeader";
 import {
@@ -24,6 +25,7 @@ import { SortSelect } from "@/components/ui/SortSelect";
 import { TagFilter } from "@/components/ui/TagFilter";
 import { useToast } from "@/components/ui/Toast";
 import { setTagColorOverrides } from "@/lib/tagColors";
+import { PAGE_SIZE, clampPage, totalPages } from "@/lib/pagination";
 import type { Link, Tag } from "@/lib/types";
 
 const SKELETON_DELAY_MS = 200;
@@ -50,8 +52,10 @@ function HomePageContent() {
   const [showSkeleton, setShowSkeleton] = useState(false);
   const [matchCount, setMatchCount] = useState(0);
   const [totalLinks, setTotalLinks] = useState(0);
-  const [hasMore, setHasMore] = useState(false);
-  const [loadingMore, setLoadingMore] = useState(false);
+  const [page, setPage] = useState(() => {
+    const value = Number(searchParams.get("page"));
+    return Number.isSafeInteger(value) && value > 0 ? value : 1;
+  });
   const [selectionMode, setSelectionMode] = useState(false);
   const [selectedIds, setSelectedIds] = useState<Set<number>>(new Set());
   const [bulkTags, setBulkTags] = useState<string[]>([]);
@@ -64,42 +68,79 @@ function HomePageContent() {
   const [linksLoadFailed, setLinksLoadFailed] = useState(false);
   const importInputRef = useRef<HTMLInputElement | null>(null);
   const addInputRef = useRef<HTMLInputElement | null>(null);
+  const resultsRef = useRef<HTMLElement | null>(null);
+  const requestIdRef = useRef<symbol | null>(null);
 
-  const loadLinks = useCallback(
-    async (offset = 0) => {
-      const params = new URLSearchParams();
-      if (query) params.set("q", query);
-      if (activeTag) params.set("tag", activeTag);
-      if (sort !== "created_desc") params.set("sort", sort);
-      if (offset) params.set("offset", String(offset));
+  const loadLinks = useCallback(async () => {
+    const requestId = Symbol();
+    requestIdRef.current = requestId;
+    setLoading(true);
+    setLinksLoadFailed(false);
+    let clamping = false;
+    const params = new URLSearchParams();
+    if (query) params.set("q", query);
+    if (activeTag) params.set("tag", activeTag);
+    if (sort !== "created_desc") params.set("sort", sort);
+    params.set("limit", String(PAGE_SIZE));
+    params.set("offset", String((page - 1) * PAGE_SIZE));
 
-      try {
-        const res = await fetch(`/api/links?${params.toString()}`);
-        if (!res.ok) throw new Error(`GET /api/links failed with ${res.status}`);
-        const data = await res.json();
-        const fetched: Link[] = data.links || [];
-        const count = data.matchCount ?? 0;
-
-        setLinks((prev) => (offset ? [...prev, ...fetched] : fetched));
-        setMatchCount(count);
-        if (!query && !activeTag) {
-          setTotalLinks(count);
-        }
-        setHasMore(Boolean(data.hasMore));
-        setLinksLoadFailed(false);
-      } catch {
-        setLinksLoadFailed(true);
-      } finally {
-        setLoading(false);
-        setLoadingMore(false);
+    try {
+      const res = await fetch(`/api/links?${params.toString()}`);
+      if (!res.ok) throw new Error(`GET /api/links failed with ${res.status}`);
+      const data = await res.json();
+      if (requestId !== requestIdRef.current) return;
+      let count = data.matchCount ?? 0;
+      // The existing API's window count is zero when an offset returns no rows.
+      if (page > 1 && data.links.length === 0) {
+        params.set("offset", "0");
+        const firstPage = await fetch(`/api/links?${params.toString()}`);
+        if (!firstPage.ok) throw new Error(`GET /api/links failed with ${firstPage.status}`);
+        count = (await firstPage.json()).matchCount ?? 0;
+        if (requestId !== requestIdRef.current) return;
       }
-    },
-    [query, activeTag, sort]
-  );
+      const validPage = clampPage(page, totalPages(count, PAGE_SIZE));
+      if (validPage !== page) {
+        clamping = true;
+        setPage(validPage);
+        return;
+      }
+      setLinks(data.links || []);
+      setMatchCount(count);
+      if (!query && !activeTag) setTotalLinks(count);
+    } catch {
+      if (requestId === requestIdRef.current) setLinksLoadFailed(true);
+    } finally {
+      if (requestId === requestIdRef.current && !clamping) setLoading(false);
+    }
+  }, [query, activeTag, sort, page]);
 
-  async function handleLoadMore() {
-    setLoadingMore(true);
-    await loadLinks(links.length);
+  function changePage(next: number) {
+    if (next === page) return;
+    setLoading(true);
+    setPage(next);
+    resultsRef.current?.focus({ preventScroll: true });
+    resultsRef.current?.scrollIntoView({ block: "start" });
+  }
+
+  function changeQuery(value: string) {
+    if (value === query) return;
+    setLoading(true);
+    setQuery(value);
+    setPage(1);
+  }
+
+  function changeTag(value: string | null) {
+    if (value === activeTag) return;
+    setLoading(true);
+    setActiveTag(value);
+    setPage(1);
+  }
+
+  function changeSort(value: string) {
+    if (value === sort) return;
+    setLoading(true);
+    setSort(value);
+    setPage(1);
   }
 
   const loadTags = useCallback(async () => {
@@ -116,11 +157,6 @@ function HomePageContent() {
   }, []);
 
   useEffect(() => {
-    // eslint-disable-next-line react-hooks/set-state-in-effect -- data fetch on mount/query change
-    void loadLinks();
-  }, [loadLinks]);
-
-  useEffect(() => {
     // eslint-disable-next-line react-hooks/set-state-in-effect -- data fetch on mount
     void loadTags();
   }, [loadTags]);
@@ -134,24 +170,22 @@ function HomePageContent() {
     };
   }, [loading]);
 
-  const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   useEffect(() => {
-    if (debounceRef.current) clearTimeout(debounceRef.current);
-    debounceRef.current = setTimeout(() => {
+    const timer = setTimeout(() => {
       const params = new URLSearchParams();
       if (query) params.set("q", query);
       if (activeTag) params.set("tag", activeTag);
       if (sort !== "created_desc") params.set("sort", sort);
+      if (page !== 1) params.set("page", String(page));
       const qs = params.toString();
       router.replace(qs ? `/?${qs}` : "/", { scroll: false });
-      setLoading(true);
       void loadLinks();
     }, 120);
     return () => {
-      if (debounceRef.current) clearTimeout(debounceRef.current);
+      clearTimeout(timer);
+      requestIdRef.current = null;
     };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [query, activeTag, sort]);
+  }, [query, activeTag, sort, page, router, loadLinks]);
 
   function handleChanged() {
     void loadLinks();
@@ -229,6 +263,7 @@ function HomePageContent() {
       }
     }
     setBulkTags([]);
+    setSelectedIds(new Set());
     handleChanged();
   }
 
@@ -340,7 +375,7 @@ function HomePageContent() {
         onChange={handleImportFile}
         className="hidden"
       />
-    <main className={`mx-auto w-full max-w-[var(--container-wide)] px-5 py-8 sm:px-8 sm:py-12 ${selectionMode ? "pb-64 sm:pb-32" : ""}`}>
+    <main className={`mx-auto w-full max-w-[var(--container-wide)] px-5 py-8 sm:px-8 sm:py-12 ${selectionMode ? "pb-64 sm:pb-64" : ""}`}>
       <div className="mx-auto w-full min-w-0">
       <div className="mb-8 flex items-end justify-between gap-4 border-b border-[var(--color-line)] pb-6">
         <div>
@@ -355,7 +390,7 @@ function HomePageContent() {
           <p className="eyebrow mb-2">01 / Find</p>
         <SearchBar
           value={query}
-          onChange={setQuery}
+          onChange={changeQuery}
           totalCount={totalLinks}
           resultCount={matchCount}
         />
@@ -371,24 +406,24 @@ function HomePageContent() {
       </div>
 
       <div className="catalogue-layout">
-        <TagFilter tags={tags} activeTag={activeTag} onSelect={setActiveTag} totalCount={totalLinks} />
-        <section aria-label="Library results" className="min-w-0">
+        <TagFilter tags={tags} activeTag={activeTag} onSelect={changeTag} totalCount={totalLinks} />
+        <section ref={resultsRef} tabIndex={-1} aria-label="Library results" aria-busy={loading} className="min-w-0 scroll-mt-4 outline-none">
       <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
         <div aria-live="polite" aria-atomic="true" className="min-w-0 text-sm text-[var(--color-ink-2)]">
           {matchCount} result{matchCount === 1 ? "" : "s"}
           {activeTag && <span className="sr-only"> filtered by tag {activeTag}</span>}
         </div>
-        <SortSelect value={sort} onChange={setSort} />
+        <SortSelect value={sort} onChange={changeSort} />
       </div>
       {hasFilter && (
         <div className="mb-4 flex min-w-0 flex-wrap items-center gap-2">
-          {activeTag && <button type="button" aria-label={`Remove filter ${activeTag}`} onClick={() => setActiveTag(null)} className="min-h-11 max-w-full truncate rounded border border-[var(--color-accent-line)] bg-[var(--color-accent-bg)] px-3 text-sm text-[var(--color-accent)]">Tag: {activeTag} ×</button>}
-          {query && <button type="button" aria-label="Remove search filter" onClick={() => setQuery("")} className="min-h-11 max-w-full truncate rounded border border-[var(--color-line)] px-3 text-sm">Search: {query} ×</button>}
-          <button type="button" onClick={() => { setQuery(""); setActiveTag(null); }} className="min-h-11 px-2 text-sm underline">Clear all</button>
+          {activeTag && <button type="button" aria-label={`Remove filter ${activeTag}`} onClick={() => changeTag(null)} className="min-h-11 max-w-full truncate rounded border border-[var(--color-accent-line)] bg-[var(--color-accent-bg)] px-3 text-sm text-[var(--color-accent)]">Tag: {activeTag} ×</button>}
+          {query && <button type="button" aria-label="Remove search filter" onClick={() => changeQuery("")} className="min-h-11 max-w-full truncate rounded border border-[var(--color-line)] px-3 text-sm">Search: {query} ×</button>}
+          <button type="button" onClick={() => { changeQuery(""); changeTag(null); }} className="min-h-11 px-2 text-sm underline">Clear all</button>
         </div>
       )}
 
-      {loading && showSkeleton && <LinkListSkeleton />}
+      {loading && showSkeleton && links.length === 0 && <LinkListSkeleton />}
 
       {isEmpty && (
         <EmptyState
@@ -407,8 +442,8 @@ function HomePageContent() {
           description="Nothing fits your current search or tag. Try different words or clear the filters."
           actionLabel="Clear filters"
           onAction={() => {
-            setQuery("");
-            setActiveTag(null);
+            changeQuery("");
+            changeTag(null);
           }}
         />
       )}
@@ -416,7 +451,7 @@ function HomePageContent() {
       {linksLoadFailed && (
         <EmptyState
           icon={<ActivityIcon size={24} />}
-          title="Could not load your library"
+          title="Could not load links."
           description="Your links have not been changed. Check your connection and try again."
           actionLabel="Retry"
           onAction={() => { setLoading(true); void loadLinks(); }}
@@ -433,20 +468,20 @@ function HomePageContent() {
         </p>
       )}
 
-      {!loading && !linksLoadFailed && links.length > 0 && (
+      {!linksLoadFailed && links.length > 0 && (
         <LinkList
           links={links}
           availableTags={tags.map((tag) => tag.name)}
           onUpdate={(updated) => setLinks((current) => current.map((link) => link.id === updated.id ? updated : link))}
           onDeleted={handleChanged}
-          hasMore={hasMore}
-          loadingMore={loadingMore}
-          onLoadMore={handleLoadMore}
           selectionMode={selectionMode}
           selectedIds={selectedIds}
           onToggleSelect={toggleSelect}
           brokenIds={brokenIds}
         />
+      )}
+      {!linksLoadFailed && (
+        <Pagination page={page} matchCount={matchCount} onPageChange={changePage} loading={loading} />
       )}
         </section>
       </div>
@@ -455,6 +490,7 @@ function HomePageContent() {
     {selectionMode && (
       <BulkBar
         selectedCount={selectedIds.size}
+        otherPageCount={selectedIds.size - links.filter((link) => selectedIds.has(link.id)).length}
         availableTags={tags.map((tag) => tag.name)}
         tags={bulkTags}
         onTagsChange={setBulkTags}
