@@ -99,7 +99,7 @@ docker compose exec -T postgres psql -v ON_ERROR_STOP=1 -U indexio -d indexio_re
 
 Point `DATABASE_URL` at `indexio_restore`, then restart the app. The database name must be unused before running `createdb`. With a non-Docker database, use PostgreSQL's `pg_dump` and `psql` clients with your connection settings instead. UI JSON/CSV export is useful for moving links, but is not a full database backup.
 
-## Updating and stopping
+## Updating
 
 Stop the app, make a backup as above, then update from your checkout:
 
@@ -111,11 +111,7 @@ npm run build
 npm start -- --hostname 127.0.0.1
 ```
 
-Review release notes for any configuration changes. To stop the Compose database without deleting its named data volume:
-
-```sh
-docker compose stop
-```
+Review release notes for any configuration changes. Compose stores database files in the named `postgres_data` volume, which persists across container restarts. Deleting that volume deletes your database; keep an external backup.
 
 ## Optional hosting
 
