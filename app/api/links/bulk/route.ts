@@ -1,16 +1,12 @@
 import { NextRequest, NextResponse } from "next/server";
 import { pool } from "@/lib/db";
+import { readJson, withApiErrors } from "@/lib/api";
+import { parseId, validateCollection, validateString, MAX_BULK_IDS, MAX_TAG_LENGTH } from "@/lib/validation";
 
-export async function POST(request: NextRequest) {
-  const body = await request.json();
-  const ids: number[] = Array.isArray(body.ids)
-    ? body.ids.map((id: unknown) => Number(id)).filter((id: number) => Number.isInteger(id))
-    : [];
+export const POST = withApiErrors(async (request: NextRequest) => {
+  const body = await readJson(request);
+  const ids = validateCollection(body.ids, { name: "ids", maxItems: MAX_BULK_IDS }).map(parseId);
   const action = body.action;
-
-  if (ids.length === 0) {
-    return NextResponse.json({ error: "ids is required" }, { status: 400 });
-  }
 
   if (action === "delete") {
     await pool.query(`DELETE FROM links WHERE id = ANY($1::int[])`, [ids]);
@@ -18,7 +14,7 @@ export async function POST(request: NextRequest) {
   }
 
   if (action === "add_tag") {
-    const tagName = typeof body.tag === "string" ? body.tag.trim() : "";
+    const tagName = validateString(body.tag, { name: "tag", maxLength: MAX_TAG_LENGTH }).trim();
     if (!tagName) {
       return NextResponse.json({ error: "tag is required" }, { status: 400 });
     }
@@ -54,4 +50,4 @@ export async function POST(request: NextRequest) {
   }
 
   return NextResponse.json({ error: "Unknown action" }, { status: 400 });
-}
+});

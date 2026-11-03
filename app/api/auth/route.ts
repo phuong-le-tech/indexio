@@ -1,15 +1,11 @@
 import { NextRequest, NextResponse } from "next/server";
 import { attemptLogin, createSessionToken, COOKIE_NAME } from "@/lib/auth";
 import { validateEnv } from "@/lib/env";
+import { readJson, withApiErrors } from "@/lib/api";
 
-export async function POST(request: NextRequest) {
-  let body: unknown;
-  try {
-    body = await request.json();
-  } catch {
-    return NextResponse.json({ error: "Invalid request" }, { status: 400 });
-  }
-  if (!body || typeof body !== "object" || !("password" in body) || typeof body.password !== "string") {
+export const POST = withApiErrors(async (request: NextRequest) => {
+  const body = await readJson(request);
+  if (typeof body.password !== "string") {
     return NextResponse.json({ error: "Invalid request" }, { status: 400 });
   }
   const result = attemptLogin(body.password);
@@ -30,7 +26,7 @@ export async function POST(request: NextRequest) {
     maxAge: 60 * 60 * 24 * 30,
   });
   return response;
-}
+});
 
 export async function DELETE() {
   const response = NextResponse.json({ ok: true });

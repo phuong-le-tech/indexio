@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { pool } from "@/lib/db";
 import { safeFetch } from "@/lib/safeFetch";
+import { withApiErrors } from "@/lib/api";
 
 const CHECK_TIMEOUT_MS = 8000;
 const CONCURRENCY = 5;
@@ -32,7 +33,7 @@ async function checkUrl(url: string): Promise<{ ok: boolean; status: number | nu
   }
 }
 
-export async function POST() {
+export const POST = withApiErrors(async () => {
   const result = await pool.query<{ id: number; url: string }>(
     `SELECT id, url FROM links ORDER BY id`
   );
@@ -54,4 +55,4 @@ export async function POST() {
     results,
     brokenCount: results.filter((r) => !r.ok).length,
   });
-}
+});

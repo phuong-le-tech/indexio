@@ -1,14 +1,12 @@
 import { NextRequest, NextResponse } from "next/server";
 import { pool } from "@/lib/db";
+import { readJson, withApiErrors } from "@/lib/api";
+import { parseId } from "@/lib/validation";
 
-export async function POST(request: NextRequest) {
-  const body = await request.json();
-  const fromId = Number(body.fromId);
-  const intoId = Number(body.intoId);
-
-  if (!Number.isInteger(fromId) || !Number.isInteger(intoId)) {
-    return NextResponse.json({ error: "fromId and intoId are required" }, { status: 400 });
-  }
+export const POST = withApiErrors(async (request: NextRequest) => {
+  const body = await readJson(request);
+  const fromId = parseId(body.fromId);
+  const intoId = parseId(body.intoId);
   if (fromId === intoId) {
     return NextResponse.json({ error: "Cannot merge a tag into itself" }, { status: 400 });
   }
@@ -45,4 +43,4 @@ export async function POST(request: NextRequest) {
   } finally {
     client.release();
   }
-}
+});

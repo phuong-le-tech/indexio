@@ -1,6 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
 import { pool } from "@/lib/db";
 import { parseCsv } from "@/lib/csv";
+import { readJson, withApiErrors, MAX_IMPORT_REQUEST_BYTES } from "@/lib/api";
+import { validateImportSize, validateNotes, validateTags, validateUrl } from "@/lib/validation";
 
 interface ImportRow {
   url: string;
@@ -29,6 +31,7 @@ function rowsFromJson(content: string): { rows: ImportRow[]; errors: number } {
   if (!Array.isArray(parsed)) {
     return { rows: [], errors: 1 };
   }
+  validateImportSize(0, parsed.length);
 
   const rows: ImportRow[] = [];
   let errors = 0;
@@ -44,7 +47,7 @@ function rowsFromJson(content: string): { rows: ImportRow[]; errors: number } {
       title: typeof entry.title === "string" ? entry.title : null,
       description: typeof entry.description === "string" ? entry.description : null,
       notes: typeof entry.notes === "string" ? entry.notes : null,
-      tags: Array.isArray(entry.tags) ? entry.tags.map((t: unknown) => String(t).trim()).filter(Boolean) : [],
+      tags: entry.tags === undefined ? [] : validateTags(entry.tags),
     });
   }
 
@@ -53,6 +56,7 @@ function rowsFromJson(content: string): { rows: ImportRow[]; errors: number } {
 
 function rowsFromCsv(content: string): { rows: ImportRow[]; errors: number } {
   const table = parseCsv(content);
+  validateImportSize(0, Math.max(0, table.length - 1));
   if (table.length === 0) {
     return { rows: [], errors: 1 };
   }
@@ -95,12 +99,18 @@ function rowsFromCsv(content: string): { rows: ImportRow[]; errors: number } {
   return { rows, errors };
 }
 
-export async function POST(request: NextRequest) {
-  const body = await request.json();
+export const POST = withApiErrors(async (request: NextRequest) => {
+  const body = await readJson(request, MAX_IMPORT_REQUEST_BYTES);
   const format = body.format === "csv" ? "csv" : "json";
   const content = typeof body.content === "string" ? body.content : "";
+  validateImportSize(Buffer.byteLength(content, "utf8"), 0);
 
   const { rows, errors: parseErrors } = format === "csv" ? rowsFromCsv(content) : rowsFromJson(content);
+  for (const row of rows) {
+    validateUrl(row.url);
+    if (row.notes !== null) validateNotes(row.notes);
+    validateTags(row.tags);
+  }
 
   if (rows.length === 0) {
     return NextResponse.json({ imported: 0, skipped: parseErrors, error: "No valid rows found" }, { status: 400 });
@@ -145,4 +155,4 @@ export async function POST(request: NextRequest) {
   } finally {
     client.release();
   }
-}
+});
