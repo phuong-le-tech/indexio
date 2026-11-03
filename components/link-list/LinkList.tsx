@@ -18,9 +18,6 @@ interface LinkListProps {
   onUpdate: (link: Link) => void;
   links: Link[];
   onDeleted: () => void;
-  hasMore?: boolean;
-  loadingMore?: boolean;
-  onLoadMore?: () => void;
   selectionMode?: boolean;
   selectedIds?: Set<number>;
   onToggleSelect?: (id: number) => void;
@@ -32,9 +29,6 @@ export function LinkList({
   onUpdate,
   links,
   onDeleted,
-  hasMore,
-  loadingMore,
-  onLoadMore,
   selectionMode,
   selectedIds,
   onToggleSelect,
@@ -99,13 +93,6 @@ export function LinkList({
           />
         ))}
       </ul>
-      {hasMore && (
-        <div className="mt-6 flex justify-center">
-          <Button variant="secondary" onClick={onLoadMore} disabled={loadingMore}>
-            {loadingMore ? "Loading…" : "Load more"}
-          </Button>
-        </div>
-      )}
     </>
   );
 }

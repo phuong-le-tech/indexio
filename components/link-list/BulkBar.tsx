@@ -7,6 +7,7 @@ import { TagPicker } from "@/components/ui/TagPicker";
 
 interface BulkBarProps {
   selectedCount: number;
+  otherPageCount: number;
   availableTags: string[];
   tags: string[];
   onTagsChange: (value: string[]) => void;
@@ -19,6 +20,7 @@ interface BulkBarProps {
 
 export function BulkBar({
   selectedCount,
+  otherPageCount,
   availableTags,
   tags,
   onTagsChange,
@@ -42,6 +44,7 @@ export function BulkBar({
           className="mr-auto text-[length:var(--text-sm)] font-medium whitespace-nowrap text-[var(--color-ink)]"
         >
           {selectedCount} selected
+          {otherPageCount > 0 && ` (${otherPageCount} on other pages)`}
         </span>
         <form
           onSubmit={(e) => {
