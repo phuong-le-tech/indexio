@@ -1,6 +1,6 @@
 "use client";
 
-import { useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { Button } from "@/components/ui/Button";
 import { AlertIcon, CheckIcon, LinkIcon, SpinnerIcon } from "@/components/ui/Icon";
 import { Kbd } from "@/components/ui/Kbd";
@@ -32,8 +32,33 @@ export function LinkForm({ onCreated, availableTags, inputRef }: LinkFormProps) 
   const [error, setError] = useState<string | null>(null);
   const [savedFlash, setSavedFlash] = useState(false);
   const formRef = useRef<HTMLFormElement>(null);
+  const [panelMaxHeight, setPanelMaxHeight] = useState<number>();
 
   const canSubmit = isValidUrl(url) && !loading;
+
+  const measurePanel = useCallback(() => {
+    const bottom = formRef.current?.getBoundingClientRect().bottom ?? 0;
+    setPanelMaxHeight(Math.max(0, Math.min(window.innerHeight * 0.6, window.innerHeight - bottom - 16)));
+  }, []);
+
+  useEffect(() => {
+    if (!expanded) return;
+    window.addEventListener("resize", measurePanel);
+    return () => window.removeEventListener("resize", measurePanel);
+  }, [expanded, measurePanel]);
+
+  useEffect(() => {
+    function handleOutsideClick(event: PointerEvent) {
+      if (!formRef.current?.contains(event.target as Node) && url.trim() === "") {
+        setExpanded(false);
+        setSelectedTags([]);
+        setNotes("");
+        setError(null);
+      }
+    }
+    document.addEventListener("pointerdown", handleOutsideClick);
+    return () => document.removeEventListener("pointerdown", handleOutsideClick);
+  }, [url]);
 
   function collapse() {
     if (url.trim() === "") {
@@ -64,10 +89,12 @@ export function LinkForm({ onCreated, availableTags, inputRef }: LinkFormProps) 
 
       if (!res.ok) {
         const body = await res.json().catch(() => ({}));
+        setExpanded(true);
         setError(body.error || "Failed to add link");
         return;
       }
     } catch {
+      setExpanded(true);
       setError("Failed to add link");
       return;
     } finally {
@@ -85,8 +112,10 @@ export function LinkForm({ onCreated, availableTags, inputRef }: LinkFormProps) 
 
   function handleKeyDown(e: React.KeyboardEvent) {
     if (e.key === "Escape") {
+      e.preventDefault();
+      e.stopPropagation();
       (e.target as HTMLElement).blur();
-      collapse();
+      setExpanded(false);
     }
   }
 
@@ -94,8 +123,11 @@ export function LinkForm({ onCreated, availableTags, inputRef }: LinkFormProps) 
     <form
       ref={formRef}
       onSubmit={handleSubmit}
-      onKeyDown={handleKeyDown}
-      className={`rounded-[var(--radius-sm)] border bg-[var(--color-surface)] transition-[border-color,box-shadow] focus-within:ring-[3px] focus-within:ring-[var(--color-focus)] ${
+      onKeyDownCapture={handleKeyDown}
+      onBlur={(event) => {
+        if (!event.currentTarget.contains(event.relatedTarget)) collapse();
+      }}
+      className={`relative h-[58px] rounded-[var(--radius-sm)] border bg-[var(--color-surface)] transition-[border-color,box-shadow] focus-within:ring-[3px] focus-within:ring-[var(--color-focus)] ${
         error
           ? "border-[var(--color-danger)]"
           : "border-[var(--color-line-strong)] focus-within:border-[var(--color-accent)]"
@@ -115,16 +147,34 @@ export function LinkForm({ onCreated, availableTags, inputRef }: LinkFormProps) 
           aria-label="URL to save"
           aria-invalid={error ? true : undefined}
           disabled={loading}
-          onFocus={() => setExpanded(true)}
-          onBlur={collapse}
+          onFocus={() => { measurePanel(); setExpanded(true); }}
           placeholder="Paste a URL to save"
           className="h-full min-w-0 flex-1 bg-transparent text-[length:var(--text-base)] text-[var(--color-ink)] outline-none placeholder:text-[var(--color-ink-3)] disabled:opacity-60"
         />
+        {expanded && (
+          <div style={{ maxHeight: panelMaxHeight }} className="absolute inset-x-0 top-full z-30 flex max-h-[60dvh] flex-col gap-2 overflow-auto rounded-b-[var(--radius-sm)] border border-[var(--color-line-strong)] bg-[var(--color-surface)] px-4 py-3 shadow-lg sm:px-5">
+            {error && (
+              <p role="alert" className="flex items-center gap-1.5 text-[length:var(--text-xs)] text-[var(--color-danger)]">
+                <AlertIcon size={14} className="shrink-0" />
+                {error}
+              </p>
+            )}
+            <TagPicker availableTags={availableTags} selected={selectedTags} onChange={setSelectedTags} />
+            <textarea
+              aria-label="Notes (optional)"
+              value={notes}
+              onChange={(e) => setNotes(e.target.value)}
+              placeholder="Notes (optional)"
+              rows={2}
+              className="w-full shrink-0 rounded-[var(--radius-sm)] border border-[var(--color-hairline)] bg-[var(--color-inset)] px-3 py-1.5 text-[length:var(--text-sm)] text-[var(--color-ink)] outline-none placeholder:text-[var(--color-ink-3)] focus:border-[var(--color-accent)]"
+            />
+            <p className="flex shrink-0 items-center gap-1.5 text-[length:var(--text-2xs)] text-[var(--color-ink-3)]">
+              <Kbd>⏎</Kbd> to save <Kbd>esc</Kbd> to close
+            </p>
+          </div>
+        )}
         {savedFlash ? (
-          <span
-            role="status"
-            className="flex shrink-0 items-center gap-1.5 px-2 text-[length:var(--text-sm)] font-medium text-[var(--color-accent)]"
-          >
+          <span role="status" className="flex shrink-0 items-center gap-1.5 px-2 text-[length:var(--text-sm)] font-medium text-[var(--color-accent)]">
             <CheckIcon size={16} />
             Saved
           </span>
@@ -135,33 +185,6 @@ export function LinkForm({ onCreated, availableTags, inputRef }: LinkFormProps) 
           </Button>
         )}
       </div>
-
-      {error && (
-        <p
-          role="alert"
-          className="flex items-center gap-1.5 px-4 pb-3 text-[length:var(--text-xs)] text-[var(--color-danger)] sm:px-5"
-        >
-          <AlertIcon size={14} className="shrink-0" />
-          {error}
-        </p>
-      )}
-
-      {expanded && (
-        <div className="flex flex-col gap-2 border-t border-[var(--color-hairline)] px-4 pt-3 pb-3 sm:px-5">
-          <TagPicker availableTags={availableTags} selected={selectedTags} onChange={setSelectedTags} />
-          <textarea
-            aria-label="Notes (optional)"
-            value={notes}
-            onChange={(e) => setNotes(e.target.value)}
-            placeholder="Notes (optional)"
-            rows={2}
-            className="w-full rounded-[var(--radius-sm)] border border-[var(--color-hairline)] bg-[var(--color-inset)] px-3 py-1.5 text-[length:var(--text-sm)] text-[var(--color-ink)] outline-none placeholder:text-[var(--color-ink-3)] focus:border-[var(--color-accent)]"
-          />
-          <p className="flex items-center gap-1.5 text-[length:var(--text-2xs)] text-[var(--color-ink-3)]">
-            <Kbd>⏎</Kbd> to save <Kbd>esc</Kbd> to close
-          </p>
-        </div>
-      )}
     </form>
   );
 }
