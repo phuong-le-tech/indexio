@@ -15,12 +15,11 @@ Built with Next.js (App Router), React, PostgreSQL (`pg`), signed session cookie
 ```sh
 git clone https://github.com/phuong-le-tech/indexio.git
 cd indexio
-cp .env.example .env.local
 openssl rand -base64 32
 openssl rand -base64 32
 ```
 
-Edit `.env.local`: replace `APP_PASSWORD` with the first generated value (your login password), and `SESSION_SECRET` with the second. Keep these values private and do not commit this file. The example database URL matches the local-only credentials in Compose.
+Create `.env.local` in your editor using `.env.example` as the template: replace `APP_PASSWORD` with the first generated value (your login password), and `SESSION_SECRET` with the second. Keep these values private and do not commit this file. The example database URL matches the local-only credentials in Compose.
 
 ```sh
 docker compose up -d --wait

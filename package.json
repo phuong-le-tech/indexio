@@ -13,7 +13,7 @@
     "lint": "eslint",
     "migrate": "tsx --env-file-if-exists=.env.local db/migrate.ts",
     "test": "vitest run",
-    "typecheck": "tsc --noEmit"
+    "typecheck": "next typegen && tsc --noEmit"
   },
   "dependencies": {
     "cheerio": "^1.2.0",
