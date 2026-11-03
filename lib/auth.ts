@@ -36,4 +36,9 @@ export function checkPassword(password: string) {
   return password === expected;
 }
 
+export function attemptLogin(password: string): "allowed" | "invalid" | "throttled";
+export function attemptLogin(): "allowed" | "invalid" | "throttled" {
+  throw new Error("Not implemented: attemptLogin");
+}
+
 export { COOKIE_NAME };
