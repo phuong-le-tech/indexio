@@ -1,3 +1,4 @@
+import { createHash, timingSafeEqual } from "node:crypto";
 import { SignJWT, jwtVerify } from "jose";
 
 const COOKIE_NAME = "indexio_session";
@@ -33,12 +34,29 @@ export function checkPassword(password: string) {
   if (!expected) {
     throw new Error("APP_PASSWORD env var is required");
   }
-  return password === expected;
+  // Fixed-size digests let timingSafeEqual compare passwords of any byte length.
+  return timingSafeEqual(
+    createHash("sha256").update(password).digest(),
+    createHash("sha256").update(expected).digest(),
+  );
 }
 
-export function attemptLogin(password: string): "allowed" | "invalid" | "throttled";
-export function attemptLogin(): "allowed" | "invalid" | "throttled" {
-  throw new Error("Not implemented: attemptLogin");
+const MAX_LOGIN_FAILURES = 5;
+const LOGIN_WINDOW_MS = 60_000;
+let failures = 0;
+let windowStart = 0;
+
+export function attemptLogin(password: string): "allowed" | "invalid" | "throttled" {
+  const now = Date.now();
+  if (now - windowStart >= LOGIN_WINDOW_MS) {
+    failures = 0;
+    windowStart = now;
+  }
+  if (failures >= MAX_LOGIN_FAILURES) return "throttled";
+  if (checkPassword(password)) return "allowed";
+  if (failures === 0) windowStart = now;
+  failures++;
+  return "invalid";
 }
 
 export { COOKIE_NAME };
