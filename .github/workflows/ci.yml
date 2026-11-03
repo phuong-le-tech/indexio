@@ -1,0 +1,51 @@
+name: CI
+
+on:
+  push:
+    branches: [main, feat/t_5ed302ee-local-readiness]
+  pull_request:
+    branches: [main]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  checks:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    services:
+      postgres:
+        image: postgres:17
+        env:
+          POSTGRES_USER: indexio
+          POSTGRES_PASSWORD: ci-only-password
+          POSTGRES_DB: indexio_test
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U indexio -d indexio_test"
+          --health-interval 2s
+          --health-timeout 5s
+          --health-retries 15
+    env:
+      DATABASE_URL: postgres://indexio:ci-only-password@127.0.0.1:5432/indexio_test
+      APP_PASSWORD: ci-only-app-password
+      SESSION_SECRET: ci-only-session-secret-at-least-32-characters
+      COOKIE_SECURE: "false"
+      ALLOW_PRIVATE_URLS: "false"
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
+        with:
+          node-version-file: .nvmrc
+          cache: npm
+      - run: npm ci
+      - run: npm run lint
+      - run: npm run typecheck
+      - run: npm test
+      - run: npm run migrate
+      - run: npm run build
