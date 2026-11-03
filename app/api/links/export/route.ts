@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { pool } from "@/lib/db";
+import { withApiErrors } from "@/lib/api";
 
 function toCsvField(value: string): string {
   return `"${value.replace(/"/g, '""')}"`;
@@ -34,7 +35,7 @@ interface ExportRow {
   created_at: Date;
 }
 
-export async function GET(request: NextRequest) {
+export const GET = withApiErrors(async (request: NextRequest) => {
   const { searchParams } = new URL(request.url);
   const format = searchParams.get("format") === "csv" ? "csv" : "json";
 
@@ -67,4 +68,4 @@ export async function GET(request: NextRequest) {
       "Content-Disposition": `attachment; filename="indexio-export-${date}.json"`,
     },
   });
-}
+});

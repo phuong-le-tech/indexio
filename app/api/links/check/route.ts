@@ -1,5 +1,7 @@
 import { NextResponse } from "next/server";
 import { pool } from "@/lib/db";
+import { safeFetch } from "@/lib/safeFetch";
+import { withApiErrors } from "@/lib/api";
 
 const CHECK_TIMEOUT_MS = 8000;
 const CONCURRENCY = 5;
@@ -11,35 +13,27 @@ interface CheckResult {
 }
 
 async function checkUrl(url: string): Promise<{ ok: boolean; status: number | null }> {
-  const controller = new AbortController();
-  const timeout = setTimeout(() => controller.abort(), CHECK_TIMEOUT_MS);
-
   try {
-    let res = await fetch(url, {
+    let res = await safeFetch(url, {
       method: "HEAD",
-      redirect: "follow",
-      signal: controller.signal,
+      timeoutMs: CHECK_TIMEOUT_MS,
       headers: { "User-Agent": "Mozilla/5.0 (compatible; Indexio/1.0)" },
     });
-    // Some servers don't support HEAD (405/501) - retry with GET before
-    // concluding the link is broken.
+    // Some servers don't support HEAD; GET must enforce the same destination policy.
     if (res.status === 405 || res.status === 501) {
-      res = await fetch(url, {
+      res = await safeFetch(url, {
         method: "GET",
-        redirect: "follow",
-        signal: controller.signal,
+        timeoutMs: CHECK_TIMEOUT_MS,
         headers: { "User-Agent": "Mozilla/5.0 (compatible; Indexio/1.0)" },
       });
     }
     return { ok: res.ok, status: res.status };
   } catch {
     return { ok: false, status: null };
-  } finally {
-    clearTimeout(timeout);
   }
 }
 
-export async function POST() {
+export const POST = withApiErrors(async () => {
   const result = await pool.query<{ id: number; url: string }>(
     `SELECT id, url FROM links ORDER BY id`
   );
@@ -61,4 +55,4 @@ export async function POST() {
     results,
     brokenCount: results.filter((r) => !r.ok).length,
   });
-}
+});

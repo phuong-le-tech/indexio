@@ -1,19 +1,18 @@
 import { NextRequest, NextResponse } from "next/server";
 import { pool } from "@/lib/db";
 import { isTagColorFamily } from "@/lib/tagColors";
+import { readJson, withApiErrors } from "@/lib/api";
+import { parseId, validateString, MAX_TAG_LENGTH } from "@/lib/validation";
 
 interface RouteParams {
   params: Promise<{ id: string }>;
 }
 
-export async function PATCH(request: NextRequest, { params }: RouteParams) {
+export const PATCH = withApiErrors(async (request: NextRequest, { params }: RouteParams) => {
   const { id } = await params;
-  const tagId = Number(id);
-  if (!Number.isInteger(tagId)) {
-    return NextResponse.json({ error: "Invalid id" }, { status: 400 });
-  }
+  const tagId = parseId(id);
 
-  const body = await request.json();
+  const body = await readJson(request);
   const hasName = "name" in body;
   const hasColor = "color" in body;
 
@@ -23,7 +22,7 @@ export async function PATCH(request: NextRequest, { params }: RouteParams) {
 
   let name: string | undefined;
   if (hasName) {
-    name = typeof body.name === "string" ? body.name.trim() : "";
+    name = validateString(body.name, { name: "tag", maxLength: MAX_TAG_LENGTH }).trim();
     if (!name) {
       return NextResponse.json({ error: "name is required" }, { status: 400 });
     }
@@ -68,18 +67,15 @@ export async function PATCH(request: NextRequest, { params }: RouteParams) {
     console.error("Failed to rename tag:", err);
     return NextResponse.json({ error: "Failed to rename tag" }, { status: 500 });
   }
-}
+});
 
-export async function DELETE(_request: NextRequest, { params }: RouteParams) {
+export const DELETE = withApiErrors(async (_request: NextRequest, { params }: RouteParams) => {
   const { id } = await params;
-  const tagId = Number(id);
-  if (!Number.isInteger(tagId)) {
-    return NextResponse.json({ error: "Invalid id" }, { status: 400 });
-  }
+  const tagId = parseId(id);
 
   await pool.query(`DELETE FROM tags WHERE id = $1`, [tagId]);
   return NextResponse.json({ ok: true });
-}
+});
 
 function isUniqueViolation(err: unknown): boolean {
   return typeof err === "object" && err !== null && "code" in err && err.code === "23505";

@@ -1,22 +1,18 @@
 import { NextRequest, NextResponse } from "next/server";
 import { pool } from "@/lib/db";
+import { readJson, withApiErrors } from "@/lib/api";
+import { parseId, validateNotes, validateTags } from "@/lib/validation";
 
 interface RouteParams {
   params: Promise<{ id: string }>;
 }
 
-export async function PATCH(request: NextRequest, { params }: RouteParams) {
+export const PATCH = withApiErrors(async (request: NextRequest, { params }: RouteParams) => {
   const { id } = await params;
-  const linkId = Number(id);
-  if (!Number.isInteger(linkId)) {
-    return NextResponse.json({ error: "Invalid id" }, { status: 400 });
-  }
-
-  const body = await request.json();
-  const notes = typeof body.notes === "string" ? body.notes.trim() : undefined;
-  const tags: string[] | undefined = Array.isArray(body.tags)
-    ? body.tags.map((t: unknown) => String(t).trim()).filter(Boolean)
-    : undefined;
+  const linkId = parseId(id);
+  const body = await readJson(request);
+  const notes = body.notes === undefined ? undefined : validateNotes(body.notes);
+  const tags = body.tags === undefined ? undefined : validateTags(body.tags);
 
   const client = await pool.connect();
   try {
@@ -56,15 +52,12 @@ export async function PATCH(request: NextRequest, { params }: RouteParams) {
   } finally {
     client.release();
   }
-}
+});
 
-export async function DELETE(_request: NextRequest, { params }: RouteParams) {
+export const DELETE = withApiErrors(async (_request: NextRequest, { params }: RouteParams) => {
   const { id } = await params;
-  const linkId = Number(id);
-  if (!Number.isInteger(linkId)) {
-    return NextResponse.json({ error: "Invalid id" }, { status: 400 });
-  }
+  const linkId = parseId(id);
 
   await pool.query(`DELETE FROM links WHERE id = $1`, [linkId]);
   return NextResponse.json({ ok: true });
-}
+});

@@ -2,6 +2,8 @@ import { NextRequest, NextResponse } from "next/server";
 import { pool } from "@/lib/db";
 import { fetchMetadata } from "@/lib/metadata";
 import { toTsQuery } from "@/lib/search";
+import { readJson, withApiErrors } from "@/lib/api";
+import { validateNotes, validateTags, validateUrl, inputError } from "@/lib/validation";
 
 const DEFAULT_LIMIT = 30;
 const MAX_LIMIT = 100;
@@ -12,7 +14,7 @@ const SORT_OPTIONS = {
   title_asc: "LOWER(COALESCE(l.title, l.url)) ASC",
 } as const;
 
-export async function GET(request: NextRequest) {
+export const GET = withApiErrors(async (request: NextRequest) => {
   const { searchParams } = new URL(request.url);
   const q = searchParams.get("q")?.trim() || "";
   const tag = searchParams.get("tag")?.trim() || "";
@@ -21,6 +23,7 @@ export async function GET(request: NextRequest) {
     MAX_LIMIT
   );
   const offset = Math.max(Number(searchParams.get("offset")) || 0, 0);
+  if (!Number.isInteger(limit) || !Number.isSafeInteger(offset)) throw inputError("Invalid pagination");
   const sortParam = searchParams.get("sort") || "";
   const orderBy =
     SORT_OPTIONS[sortParam as keyof typeof SORT_OPTIONS] ?? SORT_OPTIONS.created_desc;
@@ -79,29 +82,13 @@ export async function GET(request: NextRequest) {
     matchCount,
     hasMore: offset + result.rows.length < matchCount,
   });
-}
+});
 
-export async function POST(request: NextRequest) {
-  const body = await request.json();
-  const url = typeof body.url === "string" ? body.url.trim() : "";
-  const notes = typeof body.notes === "string" ? body.notes.trim() : null;
-  const tags: string[] = Array.isArray(body.tags)
-    ? body.tags.map((t: unknown) => String(t).trim()).filter(Boolean)
-    : [];
-
-  if (!url) {
-    return NextResponse.json({ error: "url is required" }, { status: 400 });
-  }
-
-  let parsedUrl: URL;
-  try {
-    parsedUrl = new URL(url);
-    if (!["http:", "https:"].includes(parsedUrl.protocol)) {
-      throw new Error("invalid protocol");
-    }
-  } catch {
-    return NextResponse.json({ error: "Invalid URL" }, { status: 400 });
-  }
+export const POST = withApiErrors(async (request: NextRequest) => {
+  const body = await readJson(request);
+  const parsedUrl = new URL(validateUrl(body.url));
+  const notes = body.notes === undefined ? null : validateNotes(body.notes);
+  const tags = body.tags === undefined ? [] : validateTags(body.tags);
 
   const metadata = await fetchMetadata(parsedUrl.toString());
 
@@ -149,4 +136,4 @@ export async function POST(request: NextRequest) {
   } finally {
     client.release();
   }
-}
+});
