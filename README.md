@@ -47,7 +47,7 @@ npm run build
 npm start -- --hostname 127.0.0.1
 ```
 
-Open the same localhost URL. This is still a local HTTP server, not a public hosting setup. Required configuration is validated during startup, build, and migration. Production builds and starts reject `change-me` placeholders and session secrets shorter than 32 characters.
+Open the same localhost URL. If port 3000 is occupied, development prints the selected port; set the `PORT` shell variable to a free port for `npm start`. This is still a local HTTP server, not a public hosting setup. Required configuration is validated during startup, build, migration, and route type generation (`npm run typecheck`). Production builds and starts reject `change-me` placeholders and session secrets shorter than 32 characters.
 
 ## Checks and contributing
 
