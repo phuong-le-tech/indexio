@@ -1,5 +1,4 @@
-import assert from "node:assert/strict";
-import test from "node:test";
+import { expect, test } from "vitest";
 import { clampPage, pageRange, totalPages } from "../lib/pagination";
 
 const totalPagesCases = [
@@ -11,14 +10,8 @@ const totalPagesCases = [
   { matchCount: 49, expected: 3 },
 ];
 
-totalPagesCases.forEach(({ matchCount, expected }) => {
-  void test(`AC11_totalPages: ${matchCount} results at page size 24 yields ${expected} logical pages`, () => {
-    const pageSize = 24;
-
-    const actual = totalPages(matchCount, pageSize);
-
-    assert.equal(actual, expected);
-  });
+test.each(totalPagesCases)("totalPages: $matchCount results at page size 24 yields $expected logical pages", ({ matchCount, expected }) => {
+  expect(totalPages(matchCount, 24)).toBe(expected);
 });
 
 const clampPageCases = [
@@ -30,14 +23,8 @@ const clampPageCases = [
   { page: 999, expected: 3 },
 ];
 
-clampPageCases.forEach(({ page, expected }) => {
-  void test(`AC11_clampPage: page ${page} within 1..3 resolves to ${expected}`, () => {
-    const numberOfPages = 3;
-
-    const actual = clampPage(page, numberOfPages);
-
-    assert.equal(actual, expected);
-  });
+test.each(clampPageCases)("clampPage: page $page within 1..3 resolves to $expected", ({ page, expected }) => {
+  expect(clampPage(page, 3)).toBe(expected);
 });
 
 const pageRangeCases = [
@@ -50,12 +37,6 @@ const pageRangeCases = [
   { label: "page above last clamps to last", page: 999, matchCount: 60, expected: { from: 49, to: 60 } },
 ];
 
-pageRangeCases.forEach(({ label, page, matchCount, expected }) => {
-  void test(`AC11_pageRange: ${label}`, () => {
-    const pageSize = 24;
-
-    const actual = pageRange(page, pageSize, matchCount);
-
-    assert.deepEqual(actual, expected);
-  });
+test.each(pageRangeCases)("pageRange: $label", ({ page, matchCount, expected }) => {
+  expect(pageRange(page, 24, matchCount)).toEqual(expected);
 });
