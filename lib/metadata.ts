@@ -1,4 +1,5 @@
 import * as cheerio from "cheerio";
+import { safeFetch } from "./safeFetch";
 
 export interface LinkMetadata {
   title: string | null;
@@ -6,8 +7,6 @@ export interface LinkMetadata {
   faviconUrl: string | null;
   imageUrl: string | null;
 }
-
-const FETCH_TIMEOUT_MS = 5000;
 
 function resolveUrl(base: string, maybeRelative: string | undefined) {
   if (!maybeRelative) return null;
@@ -26,12 +25,8 @@ export async function fetchMetadata(url: string): Promise<LinkMetadata> {
     imageUrl: null,
   };
 
-  const controller = new AbortController();
-  const timeout = setTimeout(() => controller.abort(), FETCH_TIMEOUT_MS);
-
   try {
-    const res = await fetch(url, {
-      signal: controller.signal,
+    const res = await safeFetch(url, {
       headers: { "User-Agent": "Mozilla/5.0 (compatible; Indexio/1.0)" },
     });
     if (!res.ok) return empty;
@@ -67,7 +62,5 @@ export async function fetchMetadata(url: string): Promise<LinkMetadata> {
     };
   } catch {
     return empty;
-  } finally {
-    clearTimeout(timeout);
   }
 }
