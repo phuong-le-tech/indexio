@@ -34,33 +34,34 @@ export async function fetchMetadata(url: string): Promise<LinkMetadata> {
     const contentType = res.headers.get("content-type") || "";
     if (!contentType.includes("text/html")) return empty;
 
-    const html = await res.text();
-    const $ = cheerio.load(html);
-
-    const title =
-      $('meta[property="og:title"]').attr("content") ||
-      $("title").first().text() ||
-      null;
-
-    const description =
-      $('meta[property="og:description"]').attr("content") ||
-      $('meta[name="description"]').attr("content") ||
-      null;
-
-    const image = resolveUrl(url, $('meta[property="og:image"]').attr("content"));
-
-    const favicon =
-      resolveUrl(url, $('link[rel="icon"]').attr("href")) ||
-      resolveUrl(url, $('link[rel="shortcut icon"]').attr("href")) ||
-      resolveUrl(url, "/favicon.ico");
-
-    return {
-      title: title?.trim() || null,
-      description: description?.trim() || null,
-      faviconUrl: favicon,
-      imageUrl: image,
-    };
+    return parseMetadata(url, cheerio.load(await res.text()));
   } catch {
     return empty;
   }
+}
+
+export function parseMetadata(url: string, $: cheerio.CheerioAPI): LinkMetadata {
+  const title =
+    $('meta[property="og:title"]').attr("content") ||
+    $("title").first().text() ||
+    null;
+
+  const description =
+    $('meta[property="og:description"]').attr("content") ||
+    $('meta[name="description"]').attr("content") ||
+    null;
+
+  const image = resolveUrl(url, $('meta[property="og:image"]').attr("content"));
+
+  const favicon =
+    resolveUrl(url, $('link[rel="icon"]').attr("href")) ||
+    resolveUrl(url, $('link[rel="shortcut icon"]').attr("href")) ||
+    resolveUrl(url, "/favicon.ico");
+
+  return {
+    title: title?.trim() || null,
+    description: description?.trim() || null,
+    faviconUrl: favicon,
+    imageUrl: image,
+  };
 }
