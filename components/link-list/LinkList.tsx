@@ -137,6 +137,7 @@ function LinkCard({
   const host = hostname(link.url);
   const displayTitle = link.title || `${host}${new URL(link.url).pathname}`;
   const [faviconFailed, setFaviconFailed] = useState(false);
+  const mentionedUrls = link.mentioned_urls.filter((url) => /^https?:\/\//i.test(url) && URL.canParse(url));
 
   return (
     <li
@@ -202,6 +203,12 @@ function LinkCard({
             <LinkIcon size={13} className="shrink-0" />
           )}
           <span className="min-w-0 truncate">{host}</span>
+          {link.source && (
+            <span className="inline-flex shrink-0 items-center justify-center rounded-[var(--radius-sm)] border border-[var(--color-line)] px-1.5 py-0.5 font-medium text-[var(--color-ink-2)]">
+              {link.source === "tiktok" ? "TikTok" : "Instagram"}
+            </span>
+          )}
+          {link.author && <span className="min-w-0 truncate">@{link.author}</span>}
           <span aria-hidden="true">·</span>
           <span className="shrink-0">{relativeTime(link.created_at)}</span>
           {broken && (
@@ -225,6 +232,32 @@ function LinkCard({
           <p className="mt-1.5 line-clamp-2 text-[length:var(--text-sm)] leading-relaxed text-[var(--color-ink-2)]">
             {link.description}
           </p>
+        )}
+
+        {link.caption ? (
+          <p className="mt-2 line-clamp-3 whitespace-pre-line break-words text-[length:var(--text-sm)] leading-relaxed text-[var(--color-ink-2)]">
+            {link.caption}
+          </p>
+        ) : link.source === "instagram" && (
+          <p className="mt-2 text-[length:var(--text-sm)] text-[var(--color-ink-3)]">Caption not available</p>
+        )}
+
+        {mentionedUrls.length > 0 && (
+          <div className="mt-2 text-[length:var(--text-sm)]">
+            <p className="font-medium text-[var(--color-ink-2)]">Links mentioned</p>
+            <ul className="mt-1 space-y-1">
+              {mentionedUrls.map((url) => (
+                <li key={url} className="min-w-0">
+                  <a href={url} target="_blank" rel="noopener noreferrer nofollow"
+                    tabIndex={selectionMode ? -1 : undefined}
+                    className={`${selectionMode ? "" : "pointer-events-auto"} relative break-all text-[var(--color-accent)] underline underline-offset-2 focus-visible:outline-auto`}
+                  >
+                    {url}
+                  </a>
+                </li>
+              ))}
+            </ul>
+          </div>
         )}
 
         {link.notes && !editing && (
