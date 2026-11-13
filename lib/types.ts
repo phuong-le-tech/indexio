@@ -6,6 +6,11 @@ export interface Link {
   favicon_url: string | null;
   image_url: string | null;
   notes: string | null;
+  source: "tiktok" | "instagram" | null;
+  author: string | null;
+  caption: string | null;
+  transcript: string | null;
+  mentioned_urls: string[];
   created_at: string;
   tags: string[];
 }

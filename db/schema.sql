@@ -49,3 +49,34 @@ INSERT INTO tags (name) VALUES
   ('Marketing'), ('Affilation'), ('Copywriting'), ('Security'), ('Monitoring'),
   ('RGPD'), ('Legal'), ('Payment')
 ON CONFLICT (name) DO NOTHING;
+
+ALTER TABLE links
+  ADD COLUMN IF NOT EXISTS source TEXT,
+  ADD COLUMN IF NOT EXISTS author TEXT,
+  ADD COLUMN IF NOT EXISTS caption TEXT,
+  ADD COLUMN IF NOT EXISTS transcript TEXT,
+  ADD COLUMN IF NOT EXISTS mentioned_urls TEXT[] NOT NULL DEFAULT '{}';
+
+-- Rebuilding a stored vector rewrites existing rows; do it only for the legacy expression.
+DO $$
+BEGIN
+  IF NOT EXISTS (
+    SELECT 1 FROM pg_attribute a
+    JOIN pg_attrdef d ON d.adrelid = a.attrelid AND d.adnum = a.attnum
+    WHERE a.attrelid = 'links'::regclass AND a.attname = 'search_vector'
+      AND NOT a.attisdropped AND pg_get_expr(d.adbin, d.adrelid) LIKE '%transcript%'
+  ) THEN
+    DROP INDEX IF EXISTS links_search_vector_idx;
+    ALTER TABLE links DROP COLUMN IF EXISTS search_vector;
+    ALTER TABLE links ADD COLUMN search_vector tsvector GENERATED ALWAYS AS (
+      setweight(to_tsvector('english', coalesce(title, '')), 'A') ||
+      setweight(to_tsvector('english', coalesce(description, '')), 'B') ||
+      setweight(to_tsvector('english', coalesce(notes, '')), 'B') ||
+      setweight(to_tsvector('english', coalesce(caption, '')), 'B') ||
+      setweight(to_tsvector('english', coalesce(url, '')), 'C') ||
+      setweight(to_tsvector('english', coalesce(author, '')), 'C') ||
+      setweight(to_tsvector('english', coalesce(transcript, '')), 'D')
+    ) STORED;
+    CREATE INDEX links_search_vector_idx ON links USING GIN (search_vector);
+  END IF;
+END $$;

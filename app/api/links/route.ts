@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { pool } from "@/lib/db";
-import { fetchMetadata } from "@/lib/metadata";
+import { fetchMediaMetadata } from "@/lib/media";
 import { toTsQuery } from "@/lib/search";
 import { readJson, withApiErrors } from "@/lib/api";
 import { validateNotes, validateTags, validateUrl, inputError } from "@/lib/validation";
@@ -61,6 +61,7 @@ export const GET = withApiErrors(async (request: NextRequest) => {
 
   const result = await pool.query(
     `SELECT l.id, l.url, l.title, l.description, l.favicon_url, l.image_url, l.notes, l.created_at,
+            l.source, l.author, l.caption, l.transcript, l.mentioned_urls,
             COUNT(*) OVER()::int AS match_count,
             COALESCE(
               (SELECT json_agg(t.name ORDER BY t.name)
@@ -90,16 +91,22 @@ export const POST = withApiErrors(async (request: NextRequest) => {
   const notes = body.notes === undefined ? null : validateNotes(body.notes);
   const tags = body.tags === undefined ? [] : validateTags(body.tags);
 
-  const metadata = await fetchMetadata(parsedUrl.toString());
+  const metadata = await fetchMediaMetadata(parsedUrl.toString());
 
   const client = await pool.connect();
   try {
     await client.query("BEGIN");
 
     const linkResult = await client.query(
-      `INSERT INTO links (url, title, description, favicon_url, image_url, notes)
-       VALUES ($1, $2, $3, $4, $5, $6)
-       ON CONFLICT (url) DO UPDATE SET updated_at = now()
+      `INSERT INTO links (url, title, description, favicon_url, image_url, notes,
+                          source, author, caption, transcript, mentioned_urls)
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)
+       ON CONFLICT (url) DO UPDATE SET updated_at = now(),
+         source = COALESCE(links.source, EXCLUDED.source),
+         author = COALESCE(links.author, EXCLUDED.author),
+         caption = COALESCE(links.caption, EXCLUDED.caption),
+         transcript = COALESCE(links.transcript, EXCLUDED.transcript),
+         mentioned_urls = COALESCE(links.mentioned_urls, EXCLUDED.mentioned_urls)
        RETURNING id`,
       [
         parsedUrl.toString(),
@@ -108,6 +115,11 @@ export const POST = withApiErrors(async (request: NextRequest) => {
         metadata.faviconUrl,
         metadata.imageUrl,
         notes,
+        metadata.source,
+        metadata.author,
+        metadata.caption,
+        metadata.transcript,
+        metadata.mentioned_urls,
       ]
     );
     const linkId = linkResult.rows[0].id;
